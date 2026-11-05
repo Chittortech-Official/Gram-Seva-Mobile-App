@@ -341,7 +341,7 @@ fun MandiPriceCard(item: MandiItem) {
             }
 
             Spacer(modifier = Modifier.height(10.dp))
-            Divider(color = GramBorder.copy(alpha = 0.6f))
+            HorizontalDivider(color = GramBorder.copy(alpha = 0.6f))
             Spacer(modifier = Modifier.height(10.dp))
 
             Row(
