@@ -15,18 +15,33 @@ data class MandiItem(
     val modalPrice: Int,
     val arrivalDate: String,
     val trend: String = "स्थिर",  // "तेज (Bullish)", "मंदा (Bearish)", "स्थिर (Stable)"
-    val isHotCrop: Boolean = false
+    val isHotCrop: Boolean = false,
+    val arrivalsTons: Double = 45.0
+)
+
+@Serializable
+data class DailyForecast(
+    val date: String,
+    val dayName: String,
+    val maxTemp: Double,
+    val minTemp: Double,
+    val rainProbability: Int,
+    val condition: String,
+    val weatherCode: Int = 0
 )
 
 @Serializable
 data class WeatherInfo(
     val city: String = "Chittorgarh",
+    val district: String = "Chittorgarh",
     val temperature: Double,
     val condition: String,
     val rainProbability: Int,
     val windSpeed: Double,
     val humidity: Int,
-    val farmerAdvisory: String
+    val farmerAdvisory: String,
+    val dailyForecast: List<DailyForecast> = emptyList(),
+    val feelsLike: Double = 29.0
 )
 
 @Serializable
@@ -45,7 +60,11 @@ data class YojanaItem(
     val titleHindi: String,
     val titleEnglish: String,
     val benefitAmount: String,
-    val category: String,        // "किसान", "महिला", "छात्र", "व्यापारी"
+    val category: String,        // "किसान", "सब्सिडी", "महिला", "बीमा"
     val eligibility: String,
-    val documentsRequired: List<String>
+    val documentsRequired: List<String>,
+    val portalName: String = "राजकिसान साथी पोर्टल / e-Mitra",
+    val helpline: String = "181 / 1800-180-1551"
 )
+
+

@@ -43,3 +43,4 @@ val GramGradStart      = Color(0xFFD84315)
 val GramGradEnd        = Color(0xFFFF6F00)
 val GramGoldGradStart  = Color(0xFFD97706)
 val GramGoldGradEnd    = Color(0xFFF59E0B)
+

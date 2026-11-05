@@ -27,3 +27,4 @@
 # Play Store Production Bundle
 ./gradlew bundleRelease
 ```
+
