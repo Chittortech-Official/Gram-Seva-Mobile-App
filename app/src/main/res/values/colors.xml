@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="snp_primary">#0F5DA1</color>
+    <color name="snp_primary_dark">#0A3E6D</color>
+    <color name="snp_primary_light">#E8F0FB</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="status_bar_color">#0F5DA1</color>
+    <color name="ic_launcher_background">#0F5DA1</color>
+</resources>
+
