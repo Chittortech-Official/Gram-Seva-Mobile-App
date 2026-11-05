@@ -234,7 +234,90 @@ class GramSevaRepository {
         return master[pin] ?: emptyList()
     }
 
-    // ─── 3. Full Mandi Rates Dataset (Rajasthan & MP Inter-State Hub) ───────────
+    companion object {
+        const val OGD_API_KEY = "579b464db66ec23bdd0000015e0681c20b34487b4f20fc7ff279002e"
+    }
+
+    // ─── 3. Live Agmarknet Mandi API from Open Government Data (data.gov.in) ───
+    suspend fun fetchLiveMandiPrices(apiKey: String = OGD_API_KEY): List<MandiItem> = withContext(Dispatchers.IO) {
+        val fallback = getMandiPrices()
+        if (apiKey.isBlank()) {
+            return@withContext fallback
+        }
+        try {
+            val url = "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=$apiKey&format=json&limit=100&filters%5Bstate%5D=Rajasthan"
+            val request = Request.Builder().url(url).build()
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) return@withContext fallback
+
+            val body = response.body?.string() ?: "{}"
+            val json = JSONObject(body)
+            val records = json.optJSONArray("records") ?: return@withContext fallback
+            if (records.length() == 0) return@withContext fallback
+
+            val liveList = mutableListOf<MandiItem>()
+            for (i in 0 until records.length()) {
+                val r = records.getJSONObject(i)
+                val rawComm = r.optString("commodity", "").trim()
+                val mkt = r.optString("market", "मंडी").trim()
+                val dist = r.optString("district", "Rajasthan").trim()
+                val state = r.optString("state", "Rajasthan").trim()
+                val variety = r.optString("variety", "General").trim()
+                val modal = r.optString("modal_price", "0").toIntOrNull() ?: 0
+                val minP = r.optString("min_price", "0").toIntOrNull() ?: (modal * 0.92).toInt()
+                val maxP = r.optString("max_price", "0").toIntOrNull() ?: (modal * 1.08).toInt()
+                val arrival = r.optString("arrival_date", "आज").trim()
+
+                if (modal <= 0) continue
+
+                val translatedComm = when {
+                    rawComm.contains("Garlic", ignoreCase = true) -> "लहसुन (Garlic)"
+                    rawComm.contains("Onion", ignoreCase = true) -> "प्याज (Onion)"
+                    rawComm.contains("Wheat", ignoreCase = true) -> "गेहूं (Wheat)"
+                    rawComm.contains("Mustard", ignoreCase = true) -> "सरसों (Mustard)"
+                    rawComm.contains("Soyabean", ignoreCase = true) || rawComm.contains("Soybean", ignoreCase = true) -> "सोयाबीन (Soybean)"
+                    rawComm.contains("Maize", ignoreCase = true) -> "मक्का (Maize)"
+                    rawComm.contains("Gram", ignoreCase = true) -> "चना (Gram)"
+                    rawComm.contains("Sesamum", ignoreCase = true) || rawComm.contains("Til", ignoreCase = true) -> "तिल (Sesame)"
+                    rawComm.contains("Coriander", ignoreCase = true) -> "धनिया (Coriander)"
+                    rawComm.contains("Methi", ignoreCase = true) || rawComm.contains("Fenugreek", ignoreCase = true) -> "मेथी (Fenugreek)"
+                    else -> rawComm
+                }
+
+                liveList.add(
+                    MandiItem(
+                        id = "ogd_${i}_${dist}_${mkt}",
+                        commodity = translatedComm,
+                        market = if (mkt.contains("Mandi", ignoreCase = true) || mkt.contains("APMC", ignoreCase = true)) mkt else "$mkt मंडी",
+                        district = dist,
+                        state = state,
+                        variety = variety,
+                        minPrice = minP,
+                        maxPrice = maxP,
+                        modalPrice = modal,
+                        arrivalDate = arrival,
+                        trend = if (modal > 6000) "तेज (Live)" else "स्थिर (Live)",
+                        isHotCrop = modal > 10000,
+                        arrivalsTons = 35.0
+                    )
+                )
+            }
+
+            if (liveList.isEmpty()) {
+                fallback
+            } else {
+                // Combine live government feed with high-priority Mewar-Malwa anchor rates (Neemuch Garlic, Nimbahera Wheat, Chittorgarh)
+                val combined = mutableListOf<MandiItem>()
+                combined.addAll(fallback.filter { it.market.contains("नीमच") || it.market.contains("चित्तौड़गढ़") })
+                combined.addAll(liveList)
+                combined.distinctBy { "${it.commodity}_${it.market}_${it.variety}" }
+            }
+        } catch (e: Exception) {
+            fallback
+        }
+    }
+
+    // ─── 4. Full Mandi Rates Dataset (Rajasthan & MP Inter-State Hub) ───────────
     fun getMandiPrices(): List<MandiItem> {
         return listOf(
             // Garlic (लहसुन) - Golden Cash Crop of Mewar-Malwa

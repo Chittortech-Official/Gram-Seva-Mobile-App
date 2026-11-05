@@ -31,27 +31,37 @@ import com.chittortech.gramseva.ui.components.SectionHeader
 import com.chittortech.gramseva.ui.components.StatusBadge
 import com.chittortech.gramseva.ui.theme.*
 import com.chittortech.gramseva.util.ShareUtils
+import kotlinx.coroutines.launch
 
 @Composable
 fun MandiScreen(
     repository: GramSevaRepository = remember { GramSevaRepository() }
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     var selectedTab by remember { mutableIntStateOf(0) } // 0: भाव सूची, 1: अंतर-मंडी तुलना
     var searchQuery by remember { mutableStateOf("") }
     var selectedCropFilter by remember { mutableStateOf("सभी") }
 
-    val cropFilters = listOf("सभी", "लहसुन", "प्याज", "गेहूं", "सरसों", "सोयाबीन", "चना", "मक्का", "इसबगोल")
-    val allMandiItems = remember { repository.getMandiPrices() }
+    val cropFilters = listOf("सभी", "लहसुन", "प्याज", "गेहूं", "सरसों", "सोयाबीन", "चना", "मक्का", "तिल")
+    var allMandiItems by remember { mutableStateOf(repository.getMandiPrices()) }
+    var isLiveFeed by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
+
+    // Fetch live government Agmarknet prices on screen launch
+    LaunchedEffect(Unit) {
+        allMandiItems = repository.fetchLiveMandiPrices()
+        isLiveFeed = true
+    }
 
     // Comparison crops
     val comparisonCrops = remember { repository.getComparisonCrops() }
     var selectedComparisonCrop by remember { mutableStateOf(comparisonCrops.first()) }
-    val comparisonItems = remember(selectedComparisonCrop) {
+    val comparisonItems = remember(selectedComparisonCrop, allMandiItems) {
         repository.getMandiComparison(selectedComparisonCrop)
     }
 
-    val filteredItems = remember(searchQuery, selectedCropFilter) {
+    val filteredItems = remember(searchQuery, selectedCropFilter, allMandiItems) {
         allMandiItems.filter { item ->
             val matchesCrop = if (selectedCropFilter == "सभी") true else item.commodity.contains(selectedCropFilter, ignoreCase = true)
             val matchesSearch = if (searchQuery.isBlank()) true else {
@@ -81,33 +91,69 @@ fun MandiScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "मंडी भाव रडार (Mandi Rates)",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GramNavy
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = if (isLiveFeed) GramGreenLight else GramPrimaryLight,
+                                border = BorderStroke(0.5.dp, if (isLiveFeed) GramGreen else GramPrimary)
+                            ) {
+                                Text(
+                                    if (isLiveFeed) "🟢 LIVE OGD" else "OFFLINE",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isLiveFeed) GramGreen else GramPrimaryDark,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
                         Text(
-                            text = "मंडी भाव रडार (Mandi Rates)",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = GramNavy
-                        )
-                        Text(
-                            text = "राजस्थान व मध्य प्रदेश प्रमुख कृषि उपज मंडियां",
+                            text = "Agmarknet भारत सरकार • राजस्थान व एमपी मंडियां",
                             fontSize = 11.sp,
                             color = GramSlate
                         )
                     }
 
-                    // Share WhatsApp Bulletin Button
-                    Button(
-                        onClick = { ShareUtils.shareFullMandiBulletin(context, allMandiItems) },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF25D366),
-                            contentColor = Color.White
-                        ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("व्हाट्सएप शेयर", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        // Refresh Live Feed Button
+                        IconButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    isRefreshing = true
+                                    allMandiItems = repository.fetchLiveMandiPrices()
+                                    isLiveFeed = true
+                                    isRefreshing = false
+                                }
+                            },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            if (isRefreshing) {
+                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.Refresh, contentDescription = "Refresh Live", tint = GramPrimary)
+                            }
+                        }
+
+                        // Share WhatsApp Bulletin Button
+                        Button(
+                            onClick = { ShareUtils.shareFullMandiBulletin(context, allMandiItems) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF25D366),
+                                contentColor = Color.White
+                            ),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("शेयर", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
 

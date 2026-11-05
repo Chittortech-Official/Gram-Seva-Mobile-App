@@ -57,8 +57,8 @@ fun HomeScreen(
     var selectedCropFilter by remember { mutableStateOf("सभी फसलें") }
     val cropFilters = listOf("सभी फसलें", "लहसुन", "प्याज", "गेहूं", "सरसों", "सोयाबीन", "मक्का", "चना")
 
-    val allMandiPrices = remember { repository.getMandiPrices() }
-    val filteredMandiPrices = remember(selectedCropFilter) {
+    var allMandiPrices by remember { mutableStateOf(repository.getMandiPrices()) }
+    val filteredMandiPrices = remember(selectedCropFilter, allMandiPrices) {
         if (selectedCropFilter == "सभी फसलें") allMandiPrices
         else allMandiPrices.filter { it.commodity.contains(selectedCropFilter, ignoreCase = true) }
     }
@@ -67,9 +67,10 @@ fun HomeScreen(
     var pincodeResults by remember { mutableStateOf(emptyList<com.chittortech.gramseva.data.models.PincodeRecord>()) }
     var isSearchingPincode by remember { mutableStateOf(false) }
 
-    // Fetch live weather on startup
+    // Fetch live weather and live government mandi feed on startup
     LaunchedEffect(Unit) {
         weather = repository.fetchWeather()
+        allMandiPrices = repository.fetchLiveMandiPrices()
     }
 
     Scaffold(
@@ -80,6 +81,7 @@ fun HomeScreen(
                 onRefreshClick = {
                     coroutineScope.launch {
                         weather = repository.fetchWeather()
+                        allMandiPrices = repository.fetchLiveMandiPrices()
                     }
                 }
             )
