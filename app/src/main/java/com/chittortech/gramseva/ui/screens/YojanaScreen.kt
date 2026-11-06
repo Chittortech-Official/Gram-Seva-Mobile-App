@@ -142,7 +142,7 @@ fun YojanaScreen(
         if (selectedTab == 0) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp)
+                contentPadding = PaddingValues(bottom = 32.dp)
             ) {
                 item {
                     Column(modifier = Modifier.padding(16.dp)) {

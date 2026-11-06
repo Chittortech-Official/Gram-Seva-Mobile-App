@@ -73,26 +73,25 @@ fun HomeScreen(
         allMandiPrices = repository.fetchLiveMandiPrices()
     }
 
-    Scaffold(
-        topBar = {
-            GramTopBar(
-                title = "ग्राम-सेवा (GramSeva)",
-                subtitle = "चित्तौड़गढ़ व राजस्थान • स्मार्ट ग्रामीण सूचना तंत्र",
-                onRefreshClick = {
-                    coroutineScope.launch {
-                        weather = repository.fetchWeather()
-                        allMandiPrices = repository.fetchLiveMandiPrices()
-                    }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(GramBackground)
+    ) {
+        GramTopBar(
+            title = "ग्राम-सेवा (GramSeva)",
+            subtitle = "चित्तौड़गढ़ व राजस्थान • स्मार्ट ग्रामीण सूचना तंत्र",
+            onRefreshClick = {
+                coroutineScope.launch {
+                    weather = repository.fetchWeather()
+                    allMandiPrices = repository.fetchLiveMandiPrices()
                 }
-            )
-        },
-        containerColor = GramBackground
-    ) { padding ->
+            }
+        )
+
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(bottom = 24.dp)
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 36.dp)
         ) {
             // ─── 1. Live Weather & Farmer Advisory Card ───────────────────────
             item {
@@ -112,7 +111,11 @@ fun HomeScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
                                 Icon(Icons.Default.WbSunny, contentDescription = null, tint = GramGold, modifier = Modifier.size(24.dp))
                                 Column {
                                     Text(
@@ -129,12 +132,21 @@ fun HomeScreen(
                                 }
                             }
 
-                            Text(
-                                text = "${weather.temperature.toInt()}°C",
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = GramPrimary
-                            )
+                            Row(verticalAlignment = Alignment.Top) {
+                                Text(
+                                    text = "${weather.temperature.toInt()}",
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = GramPrimary
+                                )
+                                Text(
+                                    text = "°C",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GramPrimary,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(10.dp))

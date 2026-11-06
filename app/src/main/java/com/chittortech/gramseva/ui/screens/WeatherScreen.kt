@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.sp
 import com.chittortech.gramseva.data.models.DailyForecast
 import com.chittortech.gramseva.data.models.WeatherInfo
 import com.chittortech.gramseva.data.repository.GramSevaRepository
-import com.chittortech.gramseva.ui.components.KpiCard
 import com.chittortech.gramseva.ui.components.SectionHeader
 import com.chittortech.gramseva.ui.theme.*
 import kotlinx.coroutines.launch
@@ -41,11 +40,11 @@ fun WeatherScreen(
         mutableStateOf(
             WeatherInfo(
                 city = selectedLocation.nameHindi,
-                temperature = 28.5,
+                temperature = 30.7,
                 condition = "साफ धूप (Clear Sky)",
-                rainProbability = 10,
-                windSpeed = 7.5,
-                humidity = 42,
+                rainProbability = 0,
+                windSpeed = 3.4,
+                humidity = 28,
                 farmerAdvisory = "✅ मौसम अनुकूल: रबी फसलों की बुवाई, सिंचाई व मंडी परिवहन के लिए उपयुक्त मौसम।"
             )
         )
@@ -66,16 +65,16 @@ fun WeatherScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(GramBackground),
-        contentPadding = PaddingValues(bottom = 24.dp)
+        contentPadding = PaddingValues(bottom = 28.dp)
     ) {
         // ─── 1. Header & District Selector ───────────────────────────────────
         item {
             Surface(
                 color = GramCardWhite,
                 border = BorderStroke(1.dp, GramBorder),
-                shadowElevation = 2.dp
+                shadowElevation = 1.5.dp
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -83,13 +82,13 @@ fun WeatherScreen(
                     ) {
                         Column {
                             Text(
-                                text = "किसान मौसम रडार (Agro Weather)",
+                                text = "किसान मौसम रडार",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = GramNavy
                             )
                             Text(
-                                text = "Open-Meteo लाइव उपग्रह डेटा • 7 दिन पूर्वानुमान",
+                                text = "Open-Meteo उपग्रह डेटा • 7 दिन पूर्वानुमान",
                                 fontSize = 11.sp,
                                 color = GramSlate
                             )
@@ -106,19 +105,24 @@ fun WeatherScreen(
                                     )
                                     isLoading = false
                                 }
-                            }
+                            },
+                            modifier = Modifier.size(36.dp)
                         ) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = GramPrimary)
+                            if (isLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = GramPrimary)
+                            } else {
+                                Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = GramPrimary)
+                            }
                         }
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = "तहसील / जिला चुनें:",
-                        fontSize = 12.sp,
+                        text = "तहसील व जिला चुनें:",
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = GramNavy
+                        color = GramSlate
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
@@ -154,18 +158,18 @@ fun WeatherScreen(
             }
         }
 
-        // ─── 2. Main Executive Weather Forecast Card ──────────────────────────
+        // ─── 2. Main Executive Weather Hero Card ──────────────────────────────
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = GramCardWhite),
                     border = BorderStroke(1.dp, GramBorder),
-                    elevation = CardDefaults.cardElevation(3.dp),
+                    elevation = CardDefaults.cardElevation(2.5.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -174,62 +178,81 @@ fun WeatherScreen(
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(
-                                        GramPrimaryLight.copy(alpha = 0.6f),
-                                        GramCardWhite
+                                        Color(0xFFFFF7ED),
+                                        Color.White
                                     )
                                 )
                             )
-                            .padding(20.dp)
+                            .padding(18.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.Top
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
                                     Icon(Icons.Default.LocationOn, contentDescription = null, tint = GramPrimary, modifier = Modifier.size(18.dp))
                                     Text(
                                         text = selectedLocation.nameHindi,
-                                        fontSize = 18.sp,
+                                        fontSize = 17.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = GramNavy
                                     )
                                 }
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = weather.condition,
                                     fontSize = 13.sp,
                                     color = GramSlate,
                                     fontWeight = FontWeight.Medium
                                 )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "महसूस: ~${weather.feelsLike.toInt()}°C",
+                                    fontSize = 11.sp,
+                                    color = TextMuted
+                                )
                             }
 
-                            Column(horizontalAlignment = Alignment.End) {
+                            // Temperature Display without wrapping
+                            Row(
+                                verticalAlignment = Alignment.Top,
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
                                 Text(
-                                    text = "${weather.temperature.toInt()}°C",
-                                    fontSize = 38.sp,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    text = "${weather.temperature.toInt()}",
+                                    fontSize = 42.sp,
+                                    fontWeight = FontWeight.Black,
                                     color = GramPrimaryDark
                                 )
                                 Text(
-                                    text = "अनुभव: ~${weather.feelsLike.toInt()}°C",
-                                    fontSize = 11.sp,
-                                    color = GramSlate
+                                    text = "°C",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GramPrimaryDark,
+                                    modifier = Modifier.padding(top = 4.dp, start = 2.dp)
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         // Dynamic Farmer Advisory Box
                         Surface(
                             shape = RoundedCornerShape(10.dp),
                             color = GramSurfaceVariant,
-                            border = BorderStroke(1.dp, GramGold.copy(alpha = 0.4f)),
+                            border = BorderStroke(1.dp, GramGold.copy(alpha = 0.35f)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
                                     Icon(Icons.Default.TipsAndUpdates, contentDescription = null, tint = GramGold, modifier = Modifier.size(18.dp))
                                     Text(
                                         text = "किसान कृषि मौसम सलाह:",
@@ -244,7 +267,7 @@ fun WeatherScreen(
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = GramNavy,
-                                    lineHeight = 18.sp
+                                    lineHeight = 17.sp
                                 )
                             }
                         }
@@ -253,42 +276,38 @@ fun WeatherScreen(
             }
         }
 
-        // ─── 3. Weather Metrics Grid (Rain, Wind, Humidity) ───────────────────
+        // ─── 3. Weather Metrics Grid (Clean 3-Item Row) ────────────────────────
         item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                KpiCard(
-                    title = "बारिश संभावना",
-                    value = "${weather.rainProbability}%",
-                    subtitle = if (weather.rainProbability > 40) "अलर्ट" else "सामान्य",
+                WeatherMetricPill(
                     icon = Icons.Default.WaterDrop,
-                    iconBg = GramBlueLight,
-                    iconTint = GramBlue,
-                    valueColor = if (weather.rainProbability > 40) GramBlue else GramNavy,
+                    title = "वर्षा संभावना",
+                    value = "${weather.rainProbability}%",
+                    iconColor = GramBlue,
+                    bgColor = GramBlueLight,
                     modifier = Modifier.weight(1f)
                 )
 
-                KpiCard(
+                WeatherMetricPill(
+                    icon = Icons.Default.Air,
                     title = "हवा की गति",
                     value = "${weather.windSpeed} km/h",
-                    subtitle = "पवन वेग",
-                    icon = Icons.Default.Air,
-                    iconBg = GramAmberLight,
-                    iconTint = GramAmber,
+                    iconColor = GramAmber,
+                    bgColor = GramAmberLight,
                     modifier = Modifier.weight(1f)
                 )
 
-                KpiCard(
+                WeatherMetricPill(
+                    icon = Icons.Default.Grain,
                     title = "हवा में नमी",
                     value = "${weather.humidity}%",
-                    subtitle = "आर्द्रता",
-                    icon = Icons.Default.Grain,
-                    iconBg = GramGreenLight,
-                    iconTint = GramGreen,
+                    iconColor = GramGreen,
+                    bgColor = GramGreenLight,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -296,7 +315,7 @@ fun WeatherScreen(
 
         // ─── 4. 7-Day Extended Farmer Forecast ────────────────────────────────
         item {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(18.dp))
             SectionHeader(
                 title = "📅 7 दिवसीय मौसम व वर्षा पूर्वानुमान",
                 subtitle = "फसल कटाई, दवा छिड़काव व सिंचाई की योजना बनाएं"
@@ -309,7 +328,7 @@ fun WeatherScreen(
 
         // ─── 5. Kisan Weather Helpline Banner ─────────────────────────────────
         item {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -354,6 +373,55 @@ fun WeatherScreen(
 }
 
 @Composable
+fun WeatherMetricPill(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    value: String,
+    iconColor: Color,
+    bgColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = GramCardWhite),
+        border = BorderStroke(1.dp, GramBorder),
+        elevation = CardDefaults.cardElevation(1.5.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(bgColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(18.dp))
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = value,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = GramNavy,
+                maxLines = 1
+            )
+            Text(
+                text = title,
+                fontSize = 10.sp,
+                color = GramSlate,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
 fun DailyForecastRow(day: DailyForecast) {
     Card(
         modifier = Modifier
@@ -367,12 +435,12 @@ fun DailyForecastRow(day: DailyForecast) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Day & Date
-            Column(modifier = Modifier.width(90.dp)) {
+            // Day & Date (Flexible weight)
+            Column(modifier = Modifier.weight(1.1f)) {
                 Text(
                     text = day.dayName,
                     fontSize = 14.sp,
@@ -386,11 +454,11 @@ fun DailyForecastRow(day: DailyForecast) {
                 )
             }
 
-            // Condition & Rain Indicator
+            // Condition & Rain Indicator (Center column)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1.5f)
             ) {
                 Icon(
                     imageVector = if (day.rainProbability > 30) Icons.Default.WaterDrop else Icons.Default.WbSunny,
@@ -403,35 +471,41 @@ fun DailyForecastRow(day: DailyForecast) {
                         text = day.condition,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = GramNavy
+                        color = GramNavy,
+                        maxLines = 1
                     )
                     Text(
                         text = "वर्षा: ${day.rainProbability}%",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (day.rainProbability > 40) GramBlue else GramSlate
+                        color = if (day.rainProbability > 30) GramBlue else GramSlate
                     )
                 }
             }
 
-            // Min & Max Temp
+            // Min & Max Temp (Right column)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
                     text = "${day.maxTemp.toInt()}°",
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = GramNavy
+                    color = GramPrimaryDark
+                )
+                Text(
+                    text = "/",
+                    fontSize = 13.sp,
+                    color = GramBorder
                 )
                 Text(
                     text = "${day.minTemp.toInt()}°",
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = GramSlate
                 )
             }
         }
     }
 }
-
