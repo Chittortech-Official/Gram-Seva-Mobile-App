@@ -44,8 +44,8 @@ fun MainScreen(
     Scaffold(
         bottomBar = {
             NavigationBar(
-                containerColor = GramCardWhite,
-                tonalElevation = 6.dp
+                containerColor = androidx.compose.ui.graphics.Color.White,
+                tonalElevation = 0.5.dp
             ) {
                 GramNavTab.entries.forEach { tab ->
                     val isSelected = currentTab == tab
@@ -56,7 +56,7 @@ fun MainScreen(
                             Icon(
                                 imageVector = if (isSelected) tab.selectedIcon else tab.unselectedIcon,
                                 contentDescription = tab.title,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(23.dp)
                             )
                         },
                         label = {
@@ -69,9 +69,9 @@ fun MainScreen(
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = GramPrimary,
                             selectedTextColor = GramPrimaryDark,
-                            indicatorColor = GramPrimaryLight,
-                            unselectedIconColor = GramSlate,
-                            unselectedTextColor = GramSlate
+                            indicatorColor = androidx.compose.ui.graphics.Color(0xFFFFF3E0),
+                            unselectedIconColor = androidx.compose.ui.graphics.Color(0xFF64748B),
+                            unselectedTextColor = androidx.compose.ui.graphics.Color(0xFF64748B)
                         )
                     )
                 }

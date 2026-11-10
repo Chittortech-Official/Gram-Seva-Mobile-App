@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.chittortech.gramseva.data.models.PincodeRecord
 import com.chittortech.gramseva.data.models.YojanaItem
 import com.chittortech.gramseva.data.repository.GramSevaRepository
+import com.chittortech.gramseva.ui.components.GramTopBar
 import com.chittortech.gramseva.ui.components.SectionHeader
 import com.chittortech.gramseva.ui.components.StatusBadge
 import com.chittortech.gramseva.ui.theme.*
@@ -80,50 +81,17 @@ fun YojanaScreen(
             .fillMaxSize()
             .background(GramBackground)
     ) {
-        // ─── Header & Top Tab Switch ─────────────────────────────────────────
+        // ─── Symmetrical Universal TopBar ─────────────────────────────────────
+        GramTopBar(
+            title = "ग्रामीण योजनाएं व सुविधाएं",
+            subtitle = "पात्रता जांच • सरकारी अनुदान • डाकघर निर्देशिका"
+        )
+
         Surface(
             color = GramCardWhite,
-            border = BorderStroke(1.dp, GramBorder),
-            shadowElevation = 2.dp
+            border = BorderStroke(0.5.dp, Color(0xFFE2E8F0))
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Surface(
-                        shape = androidx.compose.foundation.shape.CircleShape,
-                        color = Color.White,
-                        border = BorderStroke(1.dp, GramBorder),
-                        shadowElevation = 1.dp,
-                        modifier = Modifier.size(38.dp)
-                    ) {
-                        androidx.compose.foundation.Image(
-                            painter = androidx.compose.ui.res.painterResource(id = com.chittortech.gramseva.R.drawable.app_logo),
-                            contentDescription = "GramSeva Logo",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(androidx.compose.foundation.shape.CircleShape)
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = "ग्रामीण सुविधाएं व योजनाएं",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = GramNavy
-                        )
-                        Text(
-                            text = "सरकारी योजनाएं • पात्रता जांच • डाकघर निर्देशिका",
-                            fontSize = 11.sp,
-                            color = GramSlate
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
                 TabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = GramBackground,

@@ -1,5 +1,6 @@
 package com.chittortech.gramseva.data.repository
 
+import com.chittortech.gramseva.data.cache.MandiCache
 import com.chittortech.gramseva.data.models.*
 import com.chittortech.gramseva.util.HindiTranslator
 import kotlinx.coroutines.Dispatchers
@@ -306,7 +307,7 @@ class GramSevaRepository {
             val records = json.optJSONArray("records") ?: return@withContext fallback
             if (records.length() == 0) return@withContext fallback
 
-            val liveList = mutableListOf<MandiItem>()
+            val chittorgarhLiveItems = mutableListOf<MandiItem>()
             for (i in 0 until records.length()) {
                 val r = records.getJSONObject(i)
                 val rawComm = r.optString("commodity", "").trim()
@@ -315,22 +316,38 @@ class GramSevaRepository {
                 val recState = r.optString("state", state ?: "India").trim()
                 val variety = r.optString("variety", "General").trim()
                 val modal = r.optString("modal_price", "0").toDoubleOrNull()?.toInt() ?: 0
-                val minP = r.optString("min_price", "0").toDoubleOrNull()?.toInt() ?: (modal * 0.92).toInt()
-                val maxP = r.optString("max_price", "0").toDoubleOrNull()?.toInt() ?: (modal * 1.08).toInt()
-                val arrival = r.optString("arrival_date", "आज").trim()
+                val minP = r.optString("min_price", "0").toDoubleOrNull()?.toInt() ?: modal
+                val maxP = r.optString("max_price", "0").toDoubleOrNull()?.toInt() ?: modal
+                val arrival = r.optString("arrival_date", "10/11/2026").trim()
 
                 if (modal <= 0) continue
+
+                // Check if this record belongs to Chittorgarh or Mewar belt
+                val isChittorgarhOrMewar = dist.contains("Chittorgarh", ignoreCase = true) ||
+                        dist.contains("Chittaurgarh", ignoreCase = true) ||
+                        mkt.contains("Chittorgarh", ignoreCase = true) ||
+                        mkt.contains("Begu", ignoreCase = true) ||
+                        mkt.contains("Begun", ignoreCase = true) ||
+                        mkt.contains("Nimbahera", ignoreCase = true) ||
+                        mkt.contains("Kapasan", ignoreCase = true) ||
+                        mkt.contains("Sadri", ignoreCase = true) ||
+                        dist.contains("Neemuch", ignoreCase = true) ||
+                        mkt.contains("Neemuch", ignoreCase = true) ||
+                        dist.contains("Pratapgarh", ignoreCase = true)
+
+                // Filter out unrelated distant districts like Ganganagar, Churu, Hanumangarh
+                if (!isChittorgarhOrMewar) continue
 
                 val rawGrade = r.optString("grade", "FAQ").trim()
                 val translatedComm = HindiTranslator.translateCommodity(rawComm)
                 val translatedMarket = HindiTranslator.translateMarket(mkt)
                 val translatedDist = HindiTranslator.translateDistrict(dist)
                 val translatedState = HindiTranslator.translateState(recState)
-                val translatedVariety = HindiTranslator.translateVariety(variety)
+                val translatedVariety = HindiTranslator.translateVariety(variety, rawComm)
                 val translatedGrade = HindiTranslator.translateGrade(rawGrade)
                 val trend = if (modal > 6000) "तेज (लाइव)" else "स्थिर (लाइव)"
 
-                liveList.add(
+                chittorgarhLiveItems.add(
                     MandiItem(
                         id = "ogd_${i}_${dist}_${mkt}",
                         commodity = translatedComm,
@@ -350,8 +367,24 @@ class GramSevaRepository {
                 )
             }
 
-            if (liveList.isNotEmpty()) {
-                liveList
+            // Combine live Chittorgarh records with core Chittorgarh APMC network crops
+            val combinedList = mutableListOf<MandiItem>()
+            combinedList.addAll(chittorgarhLiveItems)
+
+            // Add standard Chittorgarh mandis so the farmer always has comprehensive crop coverage
+            val coreMewar = fallback.filter { item ->
+                val alreadyPresent = chittorgarhLiveItems.any {
+                    it.commodity.contains(item.commodity.substringBefore(" ("), ignoreCase = true) &&
+                    it.market.contains(item.market.substringBefore(" "), ignoreCase = true)
+                }
+                !alreadyPresent
+            }
+            combinedList.addAll(coreMewar)
+
+            if (combinedList.isNotEmpty()) {
+                val stateKey = state?.trim()?.ifBlank { "Rajasthan" } ?: "Rajasthan"
+                MandiCache.memoryCache[stateKey] = combinedList
+                combinedList
             } else {
                 fallback
             }
@@ -808,9 +841,15 @@ class GramSevaRepository {
         "प्याज (Onion)"
     )
 
-    fun getMandiComparison(commodityName: String): List<MandiItem> {
-        val all = getMandiPrices()
+    fun getMandiComparison(commodityName: String, sourceList: List<MandiItem>? = null): List<MandiItem> {
         val keyword = commodityName.substringBefore(" ").trim()
+        val pool = (sourceList ?: MandiCache.getMemoryCache("Rajasthan") ?: emptyList())
+            .filter { it.commodity.contains(keyword, ignoreCase = true) }
+
+        if (pool.isNotEmpty()) {
+            return pool.sortedByDescending { it.modalPrice }
+        }
+        val all = getMandiPrices()
         return all.filter { it.commodity.contains(keyword, ignoreCase = true) }
             .sortedByDescending { it.modalPrice }
     }

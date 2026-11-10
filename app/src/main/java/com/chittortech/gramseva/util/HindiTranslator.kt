@@ -155,7 +155,8 @@ object HindiTranslator {
         "chittorgarh(rajasthan)" to "चित्तौड़गढ़",
         "nimbahera" to "निम्बाहेड़ा",
         "kapasan" to "कपासन",
-        "begun" to "बेंगू",
+        "begun" to "बेगूं",
+        "begu" to "बेगूं",
         "neemuch" to "नीमच",
         "mandsaur" to "मंदसौर",
         "kota" to "कोटा",
@@ -268,24 +269,31 @@ object HindiTranslator {
         return clean
     }
 
-    fun translateVariety(raw: String): String {
+    fun translateVariety(raw: String, commodity: String = ""): String {
         val clean = raw.trim().lowercase()
+        if (clean.isBlank() || clean == "other" || clean == "general" || clean == "local" || clean == commodity.trim().lowercase()) {
+            return "स्थानीय देसी"
+        }
         varietyMap[clean]?.let { return it }
         for ((key, hindi) in varietyMap) {
             if (clean.contains(key)) return hindi
         }
-        return if (raw.isBlank() || raw.equals("other", ignoreCase = true)) "सामान्य" else raw.trim()
+        return raw.trim()
     }
 
     fun translateGrade(raw: String): String {
         val clean = raw.trim().uppercase()
-        return when (clean) {
-            "FAQ" -> "मानक"
-            "LOCAL" -> "देसी"
-            "MEDIUM" -> "मध्यम"
-            "LARGE" -> "बोल्ड"
-            "SMALL" -> "बारीक"
-            else -> if (raw.isBlank()) "मानक" else raw.trim()
+        return when {
+            clean.contains("GRADE A") -> "उत्तम (A ग्रेड)"
+            clean.contains("GRADE B") -> "मध्यम (B ग्रेड)"
+            clean.contains("GRADE C") -> "सामान्य (C ग्रेड)"
+            clean == "FAQ" -> "मानक (FAQ)"
+            clean == "LOCAL" -> "स्थानीय देसी"
+            clean == "MEDIUM" -> "मध्यम दाना"
+            clean == "LARGE" -> "बोल्ड दाना"
+            clean == "SMALL" -> "बारीक दाना"
+            clean == "OTHER" || clean.isBlank() -> "मानक (FAQ)"
+            else -> raw.trim()
         }
     }
 

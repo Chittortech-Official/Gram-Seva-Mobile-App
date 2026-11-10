@@ -1,5 +1,6 @@
 package com.chittortech.gramseva.ui.screens
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,9 +26,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chittortech.gramseva.data.cache.MandiCache
 import com.chittortech.gramseva.data.location.LocationProvider
 import com.chittortech.gramseva.data.models.MandiItem
 import com.chittortech.gramseva.data.repository.GramSevaRepository
+import com.chittortech.gramseva.ui.components.GramTopBar
 import com.chittortech.gramseva.ui.components.SectionHeader
 import com.chittortech.gramseva.ui.components.StatusBadge
 import com.chittortech.gramseva.ui.theme.*
@@ -47,15 +50,26 @@ fun MandiScreen(
 
     val mandiFilters = listOf("सभी मंडियां", "चित्तौड़गढ़", "निम्बाहेड़ा", "कपासन", "बेगूं", "बड़ी सादड़ी", "नीमच")
     val cropFilters = listOf("सभी फसलें", "लहसुन", "सोयाबीन", "गेहूं", "मक्का", "चना", "सरसों", "अजवाइन", "कपास", "मूंगफली")
-    var allMandiItems by remember { mutableStateOf(repository.getMandiPrices()) }
-    var isLiveFeed by remember { mutableStateOf(false) }
-    var isRefreshing by remember { mutableStateOf(false) }
+    val cachedPrices = remember { MandiCache.getCachedMandiPrices(context, "Rajasthan") }
+    var allMandiItems by remember { 
+        mutableStateOf(cachedPrices ?: emptyList()) 
+    }
+    var isLiveFeed by remember { mutableStateOf(!cachedPrices.isNullOrEmpty()) }
+    var isRefreshing by remember { mutableStateOf(cachedPrices.isNullOrEmpty()) }
 
     // Fetch live Agmarknet prices via Cloudflare Edge
     LaunchedEffect(Unit) {
-        isRefreshing = true
-        allMandiItems = repository.fetchLiveMandiPrices(state = "Rajasthan")
-        isLiveFeed = true
+        if (allMandiItems.isEmpty()) {
+            isRefreshing = true
+        }
+        val livePrices = repository.fetchLiveMandiPrices(state = "Rajasthan")
+        if (livePrices.isNotEmpty()) {
+            allMandiItems = livePrices
+            MandiCache.saveMandiPrices(context, "Rajasthan", livePrices)
+            isLiveFeed = true
+        } else if (allMandiItems.isEmpty()) {
+            allMandiItems = repository.getMandiPrices("Rajasthan")
+        }
         isRefreshing = false
     }
 
@@ -63,7 +77,7 @@ fun MandiScreen(
     val comparisonCrops = remember { repository.getComparisonCrops() }
     var selectedComparisonCrop by remember { mutableStateOf(comparisonCrops.first()) }
     val comparisonItems = remember(selectedComparisonCrop, allMandiItems) {
-        repository.getMandiComparison(selectedComparisonCrop)
+        repository.getMandiComparison(selectedComparisonCrop, allMandiItems)
     }
 
     val filteredItems = remember(searchQuery, selectedCropFilter, selectedMandiFilter, allMandiItems) {
@@ -85,117 +99,30 @@ fun MandiScreen(
             .fillMaxSize()
             .background(GramBackground)
     ) {
-        // ─── Header & Top Action Bar ─────────────────────────────────────────
+        // ─── Unified Symmetrical TopBar ─────────────────────────────────────
+        GramTopBar(
+            title = "मंडी भाव रडार",
+            subtitle = "चित्तौड़गढ़ व राजस्थान की प्रमुख मंडियां",
+            onRefreshClick = {
+                coroutineScope.launch {
+                    isRefreshing = true
+                    val livePrices = repository.fetchLiveMandiPrices(state = "Rajasthan")
+                    if (livePrices.isNotEmpty()) {
+                        allMandiItems = livePrices
+                        MandiCache.saveMandiPrices(context, "Rajasthan", livePrices)
+                        isLiveFeed = true
+                    }
+                    isRefreshing = false
+                }
+            },
+            isRefreshing = isRefreshing
+        )
+
         Surface(
             color = GramCardWhite,
-            border = BorderStroke(1.dp, GramBorder),
-            shadowElevation = 1.5.dp
+            border = BorderStroke(0.5.dp, Color(0xFFE2E8F0))
         ) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color.White,
-                            border = BorderStroke(1.dp, GramBorder),
-                            shadowElevation = 1.dp,
-                            modifier = Modifier.size(38.dp)
-                        ) {
-                            androidx.compose.foundation.Image(
-                                painter = androidx.compose.ui.res.painterResource(id = com.chittortech.gramseva.R.drawable.app_logo),
-                                contentDescription = "GramSeva Logo",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape)
-                            )
-                        }
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "मंडी भाव रडार",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = GramNavy
-                                )
-
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = if (isLiveFeed) GramGreenLight else GramPrimaryLight,
-                                    border = BorderStroke(1.dp, if (isLiveFeed) GramGreen else GramPrimary)
-                                ) {
-                                    Text(
-                                        text = if (isLiveFeed) "🟢 लाइव" else "ऑफलाइन",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isLiveFeed) GramGreen else GramPrimaryDark,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(1.dp))
-                            Text(
-                                text = "Agmarknet • चित्तौड़गढ़ कृषि उपज मंडियां",
-                                fontSize = 11.sp,
-                                color = GramSlate
-                            )
-                        }
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        // Refresh button
-                        IconButton(
-                            onClick = {
-                                coroutineScope.launch {
-                                    isRefreshing = true
-                                    allMandiItems = repository.fetchLiveMandiPrices(state = "Rajasthan")
-                                    isLiveFeed = true
-                                    isRefreshing = false
-                                }
-                            },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            if (isRefreshing) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = GramPrimary)
-                            } else {
-                                Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = GramPrimary)
-                            }
-                        }
-
-                        // WhatsApp Share Button
-                        Button(
-                            onClick = { ShareUtils.shareFullMandiBulletin(context, allMandiItems) },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF25D366),
-                                contentColor = Color.White
-                            ),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(15.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("शेयर", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
                 // Sub-tabs: भाव सूची vs तुलना
                 TabRow(
                     selectedTabIndex = selectedTab,
@@ -346,11 +273,28 @@ fun MandiScreen(
                                 .padding(36.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                "कोई परिणाम नहीं मिला। कृपया अन्य फसल या मंडी खोजें।",
-                                fontSize = 13.sp,
-                                color = GramSlate
-                            )
+                            if (isRefreshing) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    CircularProgressIndicator(
+                                        color = GramPrimary,
+                                        modifier = Modifier.size(32.dp),
+                                        strokeWidth = 3.dp
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        "🏛️ सरकारी पोर्टल (Agmarknet) से आज के लाइव भाव लोड हो रहे हैं...",
+                                        fontSize = 13.sp,
+                                        color = GramSlate,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    "कोई परिणाम नहीं मिला। कृपया अन्य फसल या मंडी खोजें।",
+                                    fontSize = 13.sp,
+                                    color = GramSlate
+                                )
+                            }
                         }
                     }
                 }
@@ -467,14 +411,22 @@ fun MandiDetailedCard(
     item: MandiItem,
     onShareClick: () -> Unit
 ) {
+    var isExpanded by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 4.dp),
+            .padding(horizontal = 14.dp, vertical = 4.dp)
+            .clickable { isExpanded = !isExpanded },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-        border = BorderStroke(0.5.dp, GramBorder),
-        elevation = CardDefaults.cardElevation(0.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = if (isExpanded) Color(0xFFFBFDFF) else GramCardWhite
+        ),
+        border = BorderStroke(
+            width = if (isExpanded) 1.dp else 0.5.dp,
+            color = if (isExpanded) GramPrimary else GramBorder
+        ),
+        elevation = CardDefaults.cardElevation(if (isExpanded) 2.dp else 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -604,7 +556,176 @@ fun MandiDetailedCard(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Tap hint indicator
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (isExpanded) "कम विवरण दिखाएं ▲" else "पूरा विवरण व आवक देखें ▼",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GramPrimary
+                )
+            }
+
+            // Expanded Rich Details
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp)
+                ) {
+                    HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 0.8.dp)
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Verified Gov Badge
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFECFDF5),
+                        border = BorderStroke(0.5.dp, Color(0xFFA7F3D0)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text("🏛️", fontSize = 12.sp)
+                            Text(
+                                text = "सरकारी पोर्टल (Agmarknet) द्वारा सत्यापित भाव",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF065F46)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    MandiDetailRow("🌿 फसल व किस्म:", "${item.commodity.substringBefore(" (")} • ${item.variety.ifBlank { "देसी" }}")
+                    MandiDetailRow("🏷️ गुणवत्ता ग्रेड:", item.grade.ifBlank { "मानक (FAQ)" })
+                    MandiDetailRow("🏛️ मंडी व परिसर:", item.market)
+                    MandiDetailRow("📍 ज़िला व राज्य:", "${item.district}, ${item.state}")
+                    MandiDetailRow("📅 आवक तारीख:", item.arrivalDate.ifBlank { "आज" })
+                    val arrivals = item.arrivalsTons ?: 0.0
+                    if (arrivals > 0.0) {
+                        MandiDetailRow("🚚 आज की आवक:", "~${arrivals.toInt()} टन")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Price Breakdown Box: Smart handling for min == max
+                    if (item.minPrice > 0 && item.maxPrice > 0 && item.minPrice < item.maxPrice) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFF8FAFC),
+                            border = BorderStroke(0.5.dp, Color(0xFFCBD5E1)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceAround,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("न्यूनतम भाव", fontSize = 10.sp, color = GramSlate, fontWeight = FontWeight.Medium)
+                                    Text("₹${item.minPrice}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GramNavy)
+                                }
+                                Box(modifier = Modifier.height(24.dp).width(1.dp).background(Color(0xFFCBD5E1)))
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("मॉडल (औसत)", fontSize = 10.sp, color = Color(0xFF15803D), fontWeight = FontWeight.Bold)
+                                    Text("₹${item.modalPrice}", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF15803D))
+                                }
+                                Box(modifier = Modifier.height(24.dp).width(1.dp).background(Color(0xFFCBD5E1)))
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("अधिकतम भाव", fontSize = 10.sp, color = GramSlate, fontWeight = FontWeight.Medium)
+                                    Text("₹${item.maxPrice}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GramNavy)
+                                }
+                            }
+                        }
+                    } else {
+                        // Single rate banner when min == max or fixed rate
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFF0FDF4),
+                            border = BorderStroke(0.5.dp, Color(0xFF86EFAC)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "आज का एकमुश्त मंडी भाव:",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF166534),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "₹${item.modalPrice} /क्विंटल",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF15803D)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(
+                        onClick = onShareClick,
+                        modifier = Modifier.fillMaxWidth().height(38.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF25D366),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("📲 व्हाट्सएप पर शेयर करें", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun MandiDetailRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = GramSlate,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = value,
+            fontSize = 12.sp,
+            color = GramNavy,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 

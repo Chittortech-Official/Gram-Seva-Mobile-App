@@ -4,9 +4,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -127,84 +129,86 @@ fun KpiCard(
     }
 }
 
-// ─── GramTopBar (Custom Executive Header) ─────────────────────────────────────
-@OptIn(ExperimentalMaterial3Api::class)
+// ─── GramTopBar (Clean, Decent, Symmetrical Header) ──────────────────────────
 @Composable
 fun GramTopBar(
     title: String = "ग्राम-सेवा",
     subtitle: String = "चित्तौड़गढ़ ज़िला • किसान साथी",
     locationText: String? = null,
     onLocationClick: (() -> Unit)? = null,
-    onNotificationClick: (() -> Unit)? = null,
     onRefreshClick: (() -> Unit)? = null,
+    isRefreshing: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = GramCardWhite,
-        shadowElevation = 1.dp,
-        border = BorderStroke(0.5.dp, Color(0xFFF1F5F9)),
+        color = Color.White,
+        shadowElevation = 0.5.dp,
+        border = BorderStroke(0.5.dp, Color(0xFFE2E8F0)),
         modifier = modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 9.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Left: Official Logo + Title & Subtitle
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                // Farmer Logo Medallion
                 Surface(
-                    shape = androidx.compose.foundation.shape.CircleShape,
+                    shape = CircleShape,
                     color = Color.White,
-                    shadowElevation = 1.dp,
-                    modifier = Modifier.size(38.dp)
+                    border = BorderStroke(0.5.dp, Color(0xFFCBD5E1)),
+                    modifier = Modifier.size(36.dp)
                 ) {
                     androidx.compose.foundation.Image(
                         painter = androidx.compose.ui.res.painterResource(id = com.chittortech.gramseva.R.drawable.app_logo),
                         contentDescription = "GramSeva Logo",
                         modifier = Modifier
                             .fillMaxSize()
-                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .clip(CircleShape)
                     )
                 }
 
-                Column {
+                Column(verticalArrangement = Arrangement.Center) {
                     Text(
                         text = title,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = GramNavy,
-                        maxLines = 1
+                        color = Color(0xFF0F172A),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = subtitle,
                         fontSize = 11.sp,
-                        color = GramSlate,
-                        maxLines = 1
+                        color = Color(0xFF64748B),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
 
+            // Right: Clean Minimal Location / Refresh
             Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 if (onLocationClick != null && !locationText.isNullOrBlank()) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = Color(0xFFF8FAFC),
-                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        border = BorderStroke(0.8.dp, Color(0xFFCBD5E1)),
                         modifier = Modifier.clickable { onLocationClick() }
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(3.dp),
-                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.5.dp)
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
@@ -215,14 +219,13 @@ fun GramTopBar(
                             Text(
                                 text = locationText,
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = GramNavy,
-                                maxLines = 1
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF1E293B)
                             )
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = null,
-                                tint = GramSlate,
+                                tint = Color(0xFF94A3B8),
                                 modifier = Modifier.size(14.dp)
                             )
                         }
@@ -234,12 +237,20 @@ fun GramTopBar(
                         onClick = onRefreshClick,
                         modifier = Modifier.size(32.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
-                            tint = GramSlate,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        if (isRefreshing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = GramPrimary
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh",
+                                tint = Color(0xFF64748B),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }

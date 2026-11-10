@@ -33,6 +33,7 @@ import com.chittortech.gramseva.data.location.LocationProvider
 import com.chittortech.gramseva.data.models.DailyForecast
 import com.chittortech.gramseva.data.repository.GramSevaRepository
 import com.chittortech.gramseva.ui.components.GramSevaFooter
+import com.chittortech.gramseva.ui.components.GramTopBar
 import com.chittortech.gramseva.ui.components.SectionHeader
 import com.chittortech.gramseva.ui.theme.*
 import kotlinx.coroutines.launch
@@ -97,101 +98,58 @@ fun WeatherScreen(
         isLoading = false
     }
 
-    LazyColumn(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFC)),
-        contentPadding = PaddingValues(bottom = 16.dp)
+            .background(Color(0xFFF8FAFC))
     ) {
-        // ─── 1. Header & Tehsil Selector ──────────────────────────────────────
-        item {
-            Surface(
-                color = GramCardWhite,
-                border = BorderStroke(0.5.dp, Color(0xFFE2E8F0)),
-                shadowElevation = 1.dp
-            ) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color.White,
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                shadowElevation = 1.dp,
-                                modifier = Modifier.size(38.dp)
-                            ) {
-                                androidx.compose.foundation.Image(
-                                    painter = androidx.compose.ui.res.painterResource(id = com.chittortech.gramseva.R.drawable.app_logo),
-                                    contentDescription = "GramSeva Logo",
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(CircleShape)
-                                )
-                            }
-
-                            Column {
-                                Text(
-                                    text = "चित्तौड़गढ़ मौसम रडार",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = GramNavy
-                                )
-                                Text(
-                                    text = "उपग्रह आधारित लाइव मौसम व 7-दिन सलाह",
-                                    fontSize = 11.sp,
-                                    color = GramSlate
-                                )
-                            }
-                        }
-
-                        IconButton(
-                            onClick = {
-                                coroutineScope.launch {
-                                    isLoading = true
-                                    val liveW = repository.fetchWeather(
-                                        lat = selectedLocation.lat,
-                                        lon = selectedLocation.lon,
-                                        cityName = selectedLocation.nameHindi
-                                    )
-                                    weather = liveW
-                                    WeatherCache.saveWeather(context, liveW)
-                                    isLoading = false
-                                }
-                            },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            if (isLoading) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = GramPrimary)
-                            } else {
-                                Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = GramPrimary)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text = "📍 तहसील चुनें (1-टैप लाइव मौसम):",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF64748B)
+        // ─── Symmetrical Universal TopBar ─────────────────────────────────────
+        GramTopBar(
+            title = "चित्तौड़गढ़ मौसम रडार",
+            subtitle = "उपग्रह लाइव मौसम • 7-दिन कृषि सलाह",
+            onRefreshClick = {
+                coroutineScope.launch {
+                    isLoading = true
+                    val liveW = repository.fetchWeather(
+                        lat = selectedLocation.lat,
+                        lon = selectedLocation.lon,
+                        cityName = selectedLocation.nameHindi
                     )
+                    weather = liveW
+                    WeatherCache.saveWeather(context, liveW)
+                    isLoading = false
+                }
+            },
+            isRefreshing = isLoading
+        )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF8FAFC)),
+            contentPadding = PaddingValues(bottom = 16.dp)
+        ) {
+            // ─── 1. Tehsil Selector ──────────────────────────────────────
+            item {
+                Surface(
+                    color = GramCardWhite,
+                    border = BorderStroke(0.5.dp, Color(0xFFE2E8F0))
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                        Text(
+                            text = "📍 तहसील चुनें (1-टैप लाइव मौसम):",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF64748B)
+                        )
 
-                    // Compact Tehsil Pills
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Compact Tehsil Pills
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         // GPS Button
@@ -717,6 +675,7 @@ fun WeatherScreen(
             GramSevaFooter()
         }
     }
+}
 }
 
 @Composable
