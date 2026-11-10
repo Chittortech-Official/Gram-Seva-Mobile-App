@@ -9,5 +9,10 @@ build/
 .cxx
 local.properties
 *.jks
+*.keystore
+gramseva-release-key*
+*.aab
+app/release/
+.env
 .kotlin/
 .idea/
