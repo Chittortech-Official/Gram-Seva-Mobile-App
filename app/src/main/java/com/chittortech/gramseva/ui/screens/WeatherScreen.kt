@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chittortech.gramseva.data.cache.WeatherCache
 import com.chittortech.gramseva.data.location.LocationProvider
 import com.chittortech.gramseva.data.models.DailyForecast
 import com.chittortech.gramseva.data.models.WeatherInfo
@@ -40,17 +41,18 @@ fun WeatherScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    var selectedState by remember { mutableStateOf("Rajasthan") }
-    val allLocations = remember { repository.supportedLocations }
-
-    val displayLocations = remember(selectedState, allLocations) {
-        val stateLocs = LocationProvider.getLocationsForState(selectedState)
-        allLocations.filter { loc ->
-            stateLocs.any { it.nameEnglish.contains(loc.district, ignoreCase = true) || loc.nameHindi.contains(it.nameHindi) }
-        }.ifEmpty { allLocations.take(8) }
+    
+    // Focused 100% on Chittorgarh District's 11 Tehsils & border trading hubs
+    val tehsils = remember {
+        LocationProvider.chittorgarhTehsils.map {
+            GramSevaRepository.LocationCoord("${it.nameHindi} तहसील", it.lat, it.lon, it.district)
+        } + listOf(
+            GramSevaRepository.LocationCoord("नीमच (सीमावर्ती)", 24.4700, 74.8700, "Neemuch"),
+            GramSevaRepository.LocationCoord("मंदसौर (मंडी हब)", 24.0722, 75.0682, "Mandsaur")
+        )
     }
 
-    var selectedLocation by remember { mutableStateOf(displayLocations.firstOrNull() ?: allLocations.first()) }
+    var selectedLocation by remember { mutableStateOf(tehsils.first()) }
     var isDetectingGps by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -63,7 +65,6 @@ fun WeatherScreen(
                 isDetectingGps = true
                 val detected = LocationProvider.detectCurrentLocation(context)
                 if (detected != null) {
-                    selectedState = detected.state
                     selectedLocation = GramSevaRepository.LocationCoord(
                         nameHindi = detected.nameHindi,
                         lat = detected.lat,
@@ -77,28 +78,21 @@ fun WeatherScreen(
     }
 
     var isLoading by remember { mutableStateOf(false) }
+    // Initialized from persistent cache to completely eliminate 31°C to 26°C jump
     var weather by remember {
-        mutableStateOf(
-            WeatherInfo(
-                city = selectedLocation.nameHindi,
-                temperature = 30.7,
-                condition = "साफ धूप (Clear Sky)",
-                rainProbability = 0,
-                windSpeed = 3.4,
-                humidity = 28,
-                farmerAdvisory = "✅ मौसम अनुकूल: रबी फसलों की बुवाई, सिंचाई व मंडी परिवहन के लिए उपयुक्त मौसम।"
-            )
-        )
+        mutableStateOf(WeatherCache.getCachedWeather(context, selectedLocation.nameHindi))
     }
 
     // Load weather on location change
     LaunchedEffect(selectedLocation) {
         isLoading = true
-        weather = repository.fetchWeather(
+        val liveW = repository.fetchWeather(
             lat = selectedLocation.lat,
             lon = selectedLocation.lon,
             cityName = selectedLocation.nameHindi
         )
+        weather = liveW
+        WeatherCache.saveWeather(context, liveW)
         isLoading = false
     }
 
@@ -108,7 +102,7 @@ fun WeatherScreen(
             .background(GramBackground),
         contentPadding = PaddingValues(bottom = 12.dp)
     ) {
-        // ─── 1. Header & District Selector ───────────────────────────────────
+        // ─── 1. Header & Tehsil Selector ──────────────────────────────────────
         item {
             Surface(
                 color = GramCardWhite,
@@ -123,13 +117,13 @@ fun WeatherScreen(
                     ) {
                         Column {
                             Text(
-                                text = "किसान मौसम रडार",
+                                text = "चित्तौड़गढ़ ज़िला मौसम रडार",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = GramNavy
                             )
                             Text(
-                                text = "Open-Meteo उपग्रह डेटा • भारतभर का 7 दिन पूर्वानुमान",
+                                text = "उपग्रह आधारित लाइव मौसम एवं 7 दिन किसान सलाह",
                                 fontSize = 11.sp,
                                 color = GramSlate
                             )
@@ -139,11 +133,13 @@ fun WeatherScreen(
                             onClick = {
                                 coroutineScope.launch {
                                     isLoading = true
-                                    weather = repository.fetchWeather(
+                                    val liveW = repository.fetchWeather(
                                         lat = selectedLocation.lat,
                                         lon = selectedLocation.lon,
                                         cityName = selectedLocation.nameHindi
                                     )
+                                    weather = liveW
+                                    WeatherCache.saveWeather(context, liveW)
                                     isLoading = false
                                 }
                             },
@@ -159,16 +155,25 @@ fun WeatherScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // State Selector Chips
+                    Text(
+                        text = "📍 तहसील चुनें (1-टैप लाइव मौसम):",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GramSlate
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Clean Tehsil Chips
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         // GPS Button
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(20.dp),
                             color = GramGreenLight,
                             border = BorderStroke(1.dp, GramGreen),
                             modifier = Modifier.clickable {
@@ -183,82 +188,36 @@ fun WeatherScreen(
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
                                 if (isDetectingGps) {
                                     CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp, color = GramGreen)
                                 } else {
                                     Icon(Icons.Default.MyLocation, contentDescription = null, tint = GramGreen, modifier = Modifier.size(14.dp))
                                 }
-                                Text("मेरी GPS लोकेशन", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GramGreen)
+                                Text("GPS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GramGreen)
                             }
                         }
 
-                        listOf("Rajasthan", "Madhya Pradesh", "Uttar Pradesh", "Gujarat", "Punjab", "Maharashtra", "Bihar").forEach { stateKey ->
-                            val isSelected = selectedState.equals(stateKey, ignoreCase = true)
-                            val label = LocationProvider.stateDisplayNameMap[stateKey] ?: stateKey
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = {
-                                    selectedState = stateKey
-                                    val firstOfState = LocationProvider.getLocationsForState(stateKey).firstOrNull()
-                                    if (firstOfState != null) {
-                                        selectedLocation = GramSevaRepository.LocationCoord(
-                                            nameHindi = firstOfState.nameHindi,
-                                            lat = firstOfState.lat,
-                                            lon = firstOfState.lon,
-                                            district = firstOfState.district
-                                        )
-                                    }
-                                },
-                                label = { Text(label, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = GramPrimary,
-                                    selectedLabelColor = Color.White,
-                                    containerColor = GramBackground,
-                                    labelColor = GramNavy
-                                ),
-                                border = BorderStroke(1.dp, if (isSelected) GramPrimary else GramBorder)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "तहसील व जिला चुनें:",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = GramSlate
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // Location Horizontal Chip Selector
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        displayLocations.forEach { loc ->
+                        tehsils.forEach { loc ->
                             val isSelected = selectedLocation.nameHindi == loc.nameHindi
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { selectedLocation = loc },
-                                label = { Text(loc.nameHindi, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = GramPrimary,
-                                    selectedLabelColor = Color.White,
-                                    containerColor = GramCardWhite,
-                                    labelColor = TextSecondary
-                                ),
-                                border = FilterChipDefaults.filterChipBorder(
-                                    borderColor = if (isSelected) GramPrimary else GramBorder,
-                                    enabled = true,
-                                    selected = isSelected
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isSelected) GramPrimary else GramBackground,
+                                border = BorderStroke(1.dp, if (isSelected) GramPrimary else GramBorder),
+                                modifier = Modifier.clickable {
+                                    selectedLocation = loc
+                                    weather = WeatherCache.getCachedWeather(context, loc.nameHindi)
+                                }
+                            ) {
+                                Text(
+                                    text = loc.nameHindi,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else GramNavy,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                 )
-                            )
+                            }
                         }
                     }
                 }

@@ -42,18 +42,19 @@ fun MandiScreen(
     val coroutineScope = rememberCoroutineScope()
     var selectedTab by remember { mutableIntStateOf(0) } // 0: भाव सूची, 1: अंतर-मंडी तुलना
     var searchQuery by remember { mutableStateOf("") }
-    var selectedCropFilter by remember { mutableStateOf("सभी") }
-    var selectedState by remember { mutableStateOf("सभी राज्य") }
+    var selectedCropFilter by remember { mutableStateOf("सभी फसलें") }
+    var selectedMandiFilter by remember { mutableStateOf("सभी मंडियां") }
 
-    val cropFilters = listOf("सभी", "लहसुन", "प्याज", "गेहूं", "सरसों", "सोयाबीन", "चना", "मक्का", "कपास", "धान", "जीरा", "करेला", "लौकी", "टमाटर", "आलू", "केला", "सूरन", "भिंडी")
+    val mandiFilters = listOf("सभी मंडियां", "चित्तौड़गढ़", "निम्बाहेड़ा", "कपासन", "बेगूं", "बड़ी सादड़ी", "नीमच")
+    val cropFilters = listOf("सभी फसलें", "लहसुन", "सोयाबीन", "गेहूं", "मक्का", "चना", "सरसों", "अजवाइन", "कपास", "मूंगफली")
     var allMandiItems by remember { mutableStateOf(repository.getMandiPrices()) }
     var isLiveFeed by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
 
-    // Fetch live government Agmarknet prices on state change or startup
-    LaunchedEffect(selectedState) {
+    // Fetch live Agmarknet prices via Cloudflare Edge
+    LaunchedEffect(Unit) {
         isRefreshing = true
-        allMandiItems = repository.fetchLiveMandiPrices(state = selectedState)
+        allMandiItems = repository.fetchLiveMandiPrices(state = "Rajasthan")
         isLiveFeed = true
         isRefreshing = false
     }
@@ -65,17 +66,17 @@ fun MandiScreen(
         repository.getMandiComparison(selectedComparisonCrop)
     }
 
-    val filteredItems = remember(searchQuery, selectedCropFilter, allMandiItems) {
+    val filteredItems = remember(searchQuery, selectedCropFilter, selectedMandiFilter, allMandiItems) {
         allMandiItems.filter { item ->
-            val matchesCrop = if (selectedCropFilter == "सभी") true else item.commodity.contains(selectedCropFilter, ignoreCase = true)
+            val matchesCrop = if (selectedCropFilter == "सभी फसलें") true else item.commodity.contains(selectedCropFilter, ignoreCase = true)
+            val matchesMandi = if (selectedMandiFilter == "सभी मंडियां") true else item.market.contains(selectedMandiFilter, ignoreCase = true)
             val matchesSearch = if (searchQuery.isBlank()) true else {
                 item.commodity.contains(searchQuery, ignoreCase = true) ||
                         item.market.contains(searchQuery, ignoreCase = true) ||
                         item.variety.contains(searchQuery, ignoreCase = true) ||
-                        item.district.contains(searchQuery, ignoreCase = true) ||
-                        item.state.contains(searchQuery, ignoreCase = true)
+                        item.district.contains(searchQuery, ignoreCase = true)
             }
-            matchesCrop && matchesSearch
+            matchesCrop && matchesMandi && matchesSearch
         }
     }
 
@@ -126,8 +127,7 @@ fun MandiScreen(
 
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = if (selectedState == "सभी राज्य") "Agmarknet भारत सरकार • पूरा भारत लाइव भाव"
-                                   else "Agmarknet भारत सरकार • ${LocationProvider.stateDisplayNameMap[selectedState] ?: selectedState} लाइव भाव",
+                            text = "Agmarknet भारत सरकार • चित्तौड़गढ़ व सीमावर्ती मंडियां",
                             fontSize = 11.sp,
                             color = GramSlate
                         )
@@ -142,7 +142,7 @@ fun MandiScreen(
                             onClick = {
                                 coroutineScope.launch {
                                     isRefreshing = true
-                                    allMandiItems = repository.fetchLiveMandiPrices(state = selectedState)
+                                    allMandiItems = repository.fetchLiveMandiPrices(state = "Rajasthan")
                                     isLiveFeed = true
                                     isRefreshing = false
                                 }
@@ -249,41 +249,42 @@ fun MandiScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // State Chips Row (All India & States)
+                        // Chittorgarh District Mandi Filter Chips
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState())
                                 .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            LocationProvider.supportedStates.forEach { stateKey ->
-                                val isSelected = selectedState.equals(stateKey, ignoreCase = true)
-                                val label = LocationProvider.stateDisplayNameMap[stateKey] ?: stateKey
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = { selectedState = stateKey },
-                                    label = { Text(label, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = GramGold,
-                                        selectedLabelColor = Color.White,
-                                        containerColor = GramCardWhite,
-                                        labelColor = GramNavy
-                                    ),
-                                    border = BorderStroke(1.dp, if (isSelected) GramGold else GramBorder)
-                                )
+                            mandiFilters.forEach { mkt ->
+                                val isSelected = selectedMandiFilter == mkt
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = if (isSelected) GramPrimary else GramBackground,
+                                    border = BorderStroke(1.dp, if (isSelected) GramPrimary else GramBorder),
+                                    modifier = Modifier.clickable { selectedMandiFilter = mkt }
+                                ) {
+                                    Text(
+                                        text = mkt,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) Color.White else GramNavy,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
                             }
                         }
 
                         Spacer(modifier = Modifier.height(6.dp))
 
-                        // Category Chips
+                        // Chittorgarh Local Cash Crop Chips
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState())
                                 .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             cropFilters.forEach { crop ->
                                 val isSelected = selectedCropFilter == crop
@@ -292,13 +293,13 @@ fun MandiScreen(
                                     onClick = { selectedCropFilter = crop },
                                     label = { Text(crop, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = GramPrimary,
+                                        selectedContainerColor = GramGold,
                                         selectedLabelColor = Color.White,
                                         containerColor = GramCardWhite,
                                         labelColor = TextSecondary
                                     ),
                                     border = FilterChipDefaults.filterChipBorder(
-                                        borderColor = if (isSelected) GramPrimary else GramBorder,
+                                        borderColor = if (isSelected) GramGold else GramBorder,
                                         enabled = true,
                                         selected = isSelected
                                     )

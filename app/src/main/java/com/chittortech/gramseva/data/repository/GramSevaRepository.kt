@@ -24,6 +24,11 @@ class GramSevaRepository {
         val district: String
     )
 
+    val chittorgarhTehsils: List<LocationCoord>
+        get() = com.chittortech.gramseva.data.location.LocationProvider.chittorgarhTehsils.map {
+            LocationCoord("${it.nameHindi} (तहसील)", it.lat, it.lon, it.district)
+        }
+
     val supportedLocations: List<LocationCoord>
         get() = com.chittortech.gramseva.data.location.LocationProvider.allLocations.map {
             LocationCoord("${it.nameHindi} (${it.nameEnglish})", it.lat, it.lon, it.district)
@@ -43,10 +48,10 @@ class GramSevaRepository {
             val json = JSONObject(body)
 
             val current = json.optJSONObject("current")
-            val temp = current?.optDouble("temperature_2m", 30.5) ?: 30.5
-            val humidity = current?.optInt("relative_humidity_2m", 30) ?: 30
-            val feelsLike = current?.optDouble("apparent_temperature", temp + 0.8) ?: (temp + 0.8)
-            val wind = current?.optDouble("wind_speed_10m", 4.2) ?: 4.2
+            val temp = current?.optDouble("temperature_2m", 26.0) ?: 26.0
+            val humidity = current?.optInt("relative_humidity_2m", 35) ?: 35
+            val feelsLike = current?.optDouble("apparent_temperature", temp + 0.5) ?: (temp + 0.5)
+            val wind = current?.optDouble("wind_speed_10m", 3.8) ?: 3.8
             val weatherCode = current?.optInt("weather_code", 0) ?: 0
 
             val condition = getWeatherCondition(weatherCode)
@@ -103,25 +108,18 @@ class GramSevaRepository {
                 feelsLike = feelsLike
             )
         } catch (e: Exception) {
-            val fallbackTemp = when {
-                cityName.contains("नीमच") -> 29.8
-                cityName.contains("कोटा") -> 30.1
-                cityName.contains("उदयपुर") -> 30.4
-                cityName.contains("निम्बाहेड़ा") -> 30.5
-                cityName.contains("कपासन") -> 30.6
-                else -> 30.7
-            }
+            val fallbackTemp = 26.0
             WeatherInfo(
                 city = cityName,
-                district = cityName,
+                district = "Chittorgarh",
                 temperature = fallbackTemp,
                 condition = "साफ धूप (Clear Sky)",
                 rainProbability = 0,
-                windSpeed = 4.0,
-                humidity = 30,
+                windSpeed = 3.5,
+                humidity = 35,
                 farmerAdvisory = "✅ मौसम अनुकूल: रबी फसलों की बुवाई, सिंचाई व मंडी परिवहन के लिए उपयुक्त मौसम।",
                 dailyForecast = getFallbackDailyForecast(fallbackTemp),
-                feelsLike = fallbackTemp + 0.8
+                feelsLike = fallbackTemp + 0.5
             )
         }
     }
@@ -770,14 +768,15 @@ class GramSevaRepository {
         return list.filter { it.state.equals(stateFilter, ignoreCase = true) }
     }
 
-    // Crops available for cross-mandi comparison
+    // Crops available for cross-mandi comparison in Chittorgarh & Mewar Belt
     fun getComparisonCrops(): List<String> = listOf(
         "लहसुन (Garlic)",
-        "गेहूं (Wheat)",
-        "सरसों (Mustard)",
-        "प्याज (Onion)",
         "सोयाबीन (Soybean)",
-        "चना (Gram)"
+        "गेहूं (Wheat)",
+        "मक्का (Maize)",
+        "सरसों (Mustard)",
+        "चना (Gram)",
+        "प्याज (Onion)"
     )
 
     fun getMandiComparison(commodityName: String): List<MandiItem> {

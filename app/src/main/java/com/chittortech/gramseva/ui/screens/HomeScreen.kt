@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chittortech.gramseva.data.cache.WeatherCache
 import com.chittortech.gramseva.data.location.LocationProvider
 import com.chittortech.gramseva.data.models.MandiItem
 import com.chittortech.gramseva.data.models.UserLocation
@@ -49,32 +50,19 @@ fun HomeScreen(
     var showLocationSheet by remember { mutableStateOf(false) }
     var isDetectingGps by remember { mutableStateOf(false) }
 
+    // Initialized from persistent cache to completely eliminate 31°C to 26°C jump
     var weather by remember {
-        mutableStateOf(
-            WeatherInfo(
-                city = currentLocation.nameHindi,
-                temperature = 30.7,
-                condition = "साफ धूप (Clear Sky)",
-                rainProbability = 0,
-                windSpeed = 3.4,
-                humidity = 28,
-                farmerAdvisory = "✅ मौसम अनुकूल: रबी फसलों की बुवाई, सिंचाई व मंडी परिवहन के लिए उत्तम दिन।"
-            )
-        )
+        mutableStateOf(WeatherCache.getCachedWeather(context, currentLocation.nameHindi))
     }
 
     var selectedCropFilter by remember { mutableStateOf("सभी फसलें") }
-    val cropFilters = listOf("सभी फसलें", "लहसुन", "प्याज", "गेहूं", "सरसों", "सोयाबीन", "मक्का", "चना")
+    val cropFilters = listOf("सभी फसलें", "लहसुन", "सोयाबीन", "गेहूं", "मक्का", "चना", "सरसों", "अजवाइन", "कपास")
 
     var allMandiPrices by remember { mutableStateOf(repository.getMandiPrices(currentLocation.state)) }
     val filteredMandiPrices = remember(selectedCropFilter, allMandiPrices) {
         if (selectedCropFilter == "सभी फसलें") allMandiPrices
         else allMandiPrices.filter { it.commodity.contains(selectedCropFilter, ignoreCase = true) }
     }
-
-    var pincodeQuery by remember { mutableStateOf("") }
-    var pincodeResults by remember { mutableStateOf(emptyList<com.chittortech.gramseva.data.models.PincodeRecord>()) }
-    var isSearchingPincode by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -87,7 +75,9 @@ fun HomeScreen(
                 val detected = LocationProvider.detectCurrentLocation(context)
                 if (detected != null) {
                     currentLocation = detected
-                    weather = repository.fetchWeather(detected.lat, detected.lon, detected.nameHindi)
+                    val liveW = repository.fetchWeather(detected.lat, detected.lon, detected.nameHindi)
+                    weather = liveW
+                    WeatherCache.saveWeather(context, liveW)
                     allMandiPrices = repository.fetchLiveMandiPrices(state = detected.state)
                 }
                 isDetectingGps = false
@@ -107,11 +97,13 @@ fun HomeScreen(
 
     // Fetch live weather and live government mandi feed on startup or location change
     LaunchedEffect(currentLocation) {
-        weather = repository.fetchWeather(
+        val liveW = repository.fetchWeather(
             lat = currentLocation.lat,
             lon = currentLocation.lon,
             cityName = currentLocation.nameHindi
         )
+        weather = liveW
+        WeatherCache.saveWeather(context, liveW)
         allMandiPrices = repository.fetchLiveMandiPrices(state = currentLocation.state)
     }
 
@@ -135,12 +127,14 @@ fun HomeScreen(
     ) {
         GramTopBar(
             title = "ग्राम-सेवा (GramSeva)",
-            subtitle = "${LocationProvider.stateDisplayNameMap[currentLocation.state] ?: currentLocation.state} • स्मार्ट ग्रामीण सूचना तंत्र",
+            subtitle = "चित्तौड़गढ़ ज़िला • किसान डिजिटल साथी",
             locationText = currentLocation.nameHindi,
             onLocationClick = { showLocationSheet = true },
             onRefreshClick = {
                 coroutineScope.launch {
-                    weather = repository.fetchWeather(currentLocation.lat, currentLocation.lon, currentLocation.nameHindi)
+                    val liveW = repository.fetchWeather(currentLocation.lat, currentLocation.lon, currentLocation.nameHindi)
+                    weather = liveW
+                    WeatherCache.saveWeather(context, liveW)
                     allMandiPrices = repository.fetchLiveMandiPrices(state = currentLocation.state)
                 }
             }
@@ -150,12 +144,71 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 12.dp)
         ) {
+            // ─── 0. Chittorgarh Tehsils 1-Tap Quick Switcher ───────────────────
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(GramCardWhite)
+                        .padding(vertical = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "📍 चित्तौड़गढ़ तहसील चुनें:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GramNavy
+                        )
+                        Text(
+                            text = "11 तहसीलें",
+                            fontSize = 11.sp,
+                            color = GramSlate
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        LocationProvider.chittorgarhTehsils.forEach { tehsil ->
+                            val isSelected = currentLocation.nameHindi == tehsil.nameHindi
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isSelected) GramPrimary else GramBackground,
+                                border = BorderStroke(1.dp, if (isSelected) GramPrimary else GramBorder),
+                                modifier = Modifier.clickable {
+                                    currentLocation = tehsil
+                                    weather = WeatherCache.getCachedWeather(context, tehsil.nameHindi)
+                                }
+                            ) {
+                                Text(
+                                    text = tehsil.nameHindi,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else GramNavy,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // ─── 1. Live Weather & Farmer Advisory Card ───────────────────────
             item {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
                         .clickable { onNavigateToTab(2) }, // Navigate to Weather Radar
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = GramCardWhite),
@@ -176,7 +229,7 @@ fun HomeScreen(
                                 Icon(Icons.Default.WbSunny, contentDescription = null, tint = GramGold, modifier = Modifier.size(24.dp))
                                 Column {
                                     Text(
-                                        text = "${weather.city} मौसम",
+                                        text = "${weather.city} तहसील लाइव मौसम",
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = GramNavy
@@ -284,8 +337,8 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     KpiCard(
-                        title = "सक्रिय मंडियां",
-                        value = "18+ मंडियां",
+                        title = "चित्तौड़गढ़ मंडियां",
+                        value = "6 मुख्य मंडियां",
                         subtitle = "लाइव भाव",
                         icon = Icons.Default.Storefront,
                         iconBg = GramPrimaryLight,
@@ -296,8 +349,8 @@ fun HomeScreen(
 
                     KpiCard(
                         title = "लहसुन सर्वोच्च भाव",
-                        value = "₹21,500",
-                        subtitle = "नीमच मंडी",
+                        value = "₹19,100",
+                        subtitle = "निम्बाहेड़ा मंडी",
                         icon = Icons.Default.TrendingUp,
                         iconBg = GramGreenLight,
                         iconTint = GramGreen,
@@ -308,96 +361,13 @@ fun HomeScreen(
                 }
             }
 
-            // ─── 4. Quick Pincode Search ──────────────────────────────────────
+            // ─── 4. Live Mandi Rates Section ──────────────────────────────────
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 SectionHeader(
-                    title = "📮 पिनकोड व डाकघर खोज",
-                    subtitle = "पूरे भारत का पिनकोड डालें व तुरंत गांव-तहसील देखें",
-                    actionText = "विस्तृत खोज →",
-                    onActionClick = { onNavigateToTab(3) }
-                )
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-                    border = BorderStroke(1.dp, GramBorder)
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = pincodeQuery,
-                                onValueChange = {
-                                    if (it.length <= 6 && it.all { char -> char.isDigit() }) {
-                                        pincodeQuery = it
-                                        if (it.length == 6) {
-                                            isSearchingPincode = true
-                                            coroutineScope.launch {
-                                                pincodeResults = repository.fetchPincodeDetails(it)
-                                                isSearchingPincode = false
-                                            }
-                                        }
-                                    }
-                                },
-                                placeholder = { Text("6-अंक पिनकोड (e.g. 312001)", fontSize = 13.sp) },
-                                leadingIcon = { Icon(Icons.Default.PinDrop, contentDescription = null, tint = GramPrimary) },
-                                trailingIcon = {
-                                    if (isSearchingPincode) {
-                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
-                            )
-                        }
-
-                        if (pincodeResults.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = "मिले परिणाम (${pincodeResults.size} डाकघर):",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = GramSlate
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            pincodeResults.take(3).forEach { po ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
-                                        .background(GramBackground, RoundedCornerShape(6.dp))
-                                        .padding(8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "${po.postOfficeName} (${po.district})",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = GramNavy
-                                    )
-                                    StatusBadge(status = po.deliveryStatus, isPositive = true)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // ─── 5. Live Mandi Rates Section ──────────────────────────────────
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                SectionHeader(
-                    title = "🌾 आज के ताजा मंडी भाव",
-                    subtitle = "चित्तौड़गढ़, निम्बाहेड़ा, कोटा, नीमच व प्रतापगढ़",
-                    actionText = "सभी तुलना देखें →",
+                    title = "🌾 चित्तौड़गढ़ ज़िला आज के मंडी भाव",
+                    subtitle = "चित्तौड़गढ़, निम्बाहेड़ा, कपासन, बेगूं, बड़ी सादड़ी व नीमच",
+                    actionText = "मंडी तुलना देखें →",
                     onActionClick = { onNavigateToTab(1) }
                 )
 
@@ -431,7 +401,7 @@ fun HomeScreen(
                 }
             }
 
-            // ─── 6. Mandi Price Cards List ─────────────────────────────────────
+            // ─── 5. Mandi Price Cards List ─────────────────────────────────────
             items(filteredMandiPrices) { item ->
                 MandiPriceCard(
                     item = item,
