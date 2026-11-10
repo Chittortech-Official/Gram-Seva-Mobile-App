@@ -1,7 +1,11 @@
 package com.chittortech.gramseva.ui.screens
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,9 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chittortech.gramseva.data.location.LocationProvider
 import com.chittortech.gramseva.data.models.DailyForecast
 import com.chittortech.gramseva.data.models.WeatherInfo
 import com.chittortech.gramseva.data.repository.GramSevaRepository
@@ -31,9 +38,43 @@ import kotlinx.coroutines.launch
 fun WeatherScreen(
     repository: GramSevaRepository = remember { GramSevaRepository() }
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val locations = remember { repository.supportedLocations }
-    var selectedLocation by remember { mutableStateOf(locations.first()) }
+    var selectedState by remember { mutableStateOf("Rajasthan") }
+    val allLocations = remember { repository.supportedLocations }
+
+    val displayLocations = remember(selectedState, allLocations) {
+        val stateLocs = LocationProvider.getLocationsForState(selectedState)
+        allLocations.filter { loc ->
+            stateLocs.any { it.nameEnglish.contains(loc.district, ignoreCase = true) || loc.nameHindi.contains(it.nameHindi) }
+        }.ifEmpty { allLocations.take(8) }
+    }
+
+    var selectedLocation by remember { mutableStateOf(displayLocations.firstOrNull() ?: allLocations.first()) }
+    var isDetectingGps by remember { mutableStateOf(false) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        val granted = perms[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                perms[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            coroutineScope.launch {
+                isDetectingGps = true
+                val detected = LocationProvider.detectCurrentLocation(context)
+                if (detected != null) {
+                    selectedState = detected.state
+                    selectedLocation = GramSevaRepository.LocationCoord(
+                        nameHindi = detected.nameHindi,
+                        lat = detected.lat,
+                        lon = detected.lon,
+                        district = detected.district
+                    )
+                }
+                isDetectingGps = false
+            }
+        }
+    }
 
     var isLoading by remember { mutableStateOf(false) }
     var weather by remember {
@@ -65,7 +106,7 @@ fun WeatherScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(GramBackground),
-        contentPadding = PaddingValues(bottom = 28.dp)
+        contentPadding = PaddingValues(bottom = 12.dp)
     ) {
         // ─── 1. Header & District Selector ───────────────────────────────────
         item {
@@ -88,7 +129,7 @@ fun WeatherScreen(
                                 color = GramNavy
                             )
                             Text(
-                                text = "Open-Meteo उपग्रह डेटा • 7 दिन पूर्वानुमान",
+                                text = "Open-Meteo उपग्रह डेटा • भारतभर का 7 दिन पूर्वानुमान",
                                 fontSize = 11.sp,
                                 color = GramSlate
                             )
@@ -118,6 +159,72 @@ fun WeatherScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
+                    // State Selector Chips
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // GPS Button
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = GramGreenLight,
+                            border = BorderStroke(1.dp, GramGreen),
+                            modifier = Modifier.clickable {
+                                permissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION
+                                    )
+                                )
+                            }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                if (isDetectingGps) {
+                                    CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp, color = GramGreen)
+                                } else {
+                                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = GramGreen, modifier = Modifier.size(14.dp))
+                                }
+                                Text("मेरी GPS लोकेशन", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GramGreen)
+                            }
+                        }
+
+                        listOf("Rajasthan", "Madhya Pradesh", "Uttar Pradesh", "Gujarat", "Punjab", "Maharashtra", "Bihar").forEach { stateKey ->
+                            val isSelected = selectedState.equals(stateKey, ignoreCase = true)
+                            val label = LocationProvider.stateDisplayNameMap[stateKey] ?: stateKey
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    selectedState = stateKey
+                                    val firstOfState = LocationProvider.getLocationsForState(stateKey).firstOrNull()
+                                    if (firstOfState != null) {
+                                        selectedLocation = GramSevaRepository.LocationCoord(
+                                            nameHindi = firstOfState.nameHindi,
+                                            lat = firstOfState.lat,
+                                            lon = firstOfState.lon,
+                                            district = firstOfState.district
+                                        )
+                                    }
+                                },
+                                label = { Text(label, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = GramPrimary,
+                                    selectedLabelColor = Color.White,
+                                    containerColor = GramBackground,
+                                    labelColor = GramNavy
+                                ),
+                                border = BorderStroke(1.dp, if (isSelected) GramPrimary else GramBorder)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     Text(
                         text = "तहसील व जिला चुनें:",
                         fontSize = 11.sp,
@@ -134,7 +241,7 @@ fun WeatherScreen(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        locations.forEach { loc ->
+                        displayLocations.forEach { loc ->
                             val isSelected = selectedLocation.nameHindi == loc.nameHindi
                             FilterChip(
                                 selected = isSelected,
@@ -315,15 +422,33 @@ fun WeatherScreen(
 
         // ─── 4. 7-Day Extended Farmer Forecast ────────────────────────────────
         item {
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             SectionHeader(
                 title = "📅 7 दिवसीय मौसम व वर्षा पूर्वानुमान",
                 subtitle = "फसल कटाई, दवा छिड़काव व सिंचाई की योजना बनाएं"
             )
-        }
-
-        items(weather.dailyForecast) { day ->
-            DailyForecastRow(day = day)
+            Spacer(modifier = Modifier.height(6.dp))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = GramCardWhite),
+                border = BorderStroke(1.dp, GramBorder),
+                elevation = CardDefaults.cardElevation(1.dp)
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    weather.dailyForecast.forEachIndexed { index, day ->
+                        DailyForecastRow(day = day)
+                        if (index < weather.dailyForecast.size - 1) {
+                            HorizontalDivider(
+                                color = GramBorder.copy(alpha = 0.45f),
+                                modifier = Modifier.padding(horizontal = 14.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         // ─── 5. Kisan Weather Helpline Banner ─────────────────────────────────
@@ -391,12 +516,12 @@ fun WeatherMetricPill(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 6.dp),
+                .padding(vertical = 12.dp, horizontal = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(34.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(bgColor),
                 contentAlignment = Alignment.Center
@@ -406,16 +531,18 @@ fun WeatherMetricPill(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = value,
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = GramNavy,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = title,
                 fontSize = 10.sp,
                 color = GramSlate,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -423,85 +550,89 @@ fun WeatherMetricPill(
 
 @Composable
 fun DailyForecastRow(day: DailyForecast) {
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-        border = BorderStroke(1.dp, GramBorder),
-        elevation = CardDefaults.cardElevation(1.dp)
+            .padding(horizontal = 14.dp, vertical = 9.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        // Day & Short Date (Fixed width prevents shifting on narrow screens)
+        Column(modifier = Modifier.width(74.dp)) {
+            Text(
+                text = day.dayName,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = GramNavy,
+                maxLines = 1
+            )
+            val shortDate = if (day.date.length >= 10) day.date.substring(5) else day.date
+            Text(
+                text = shortDate,
+                fontSize = 11.sp,
+                color = GramSlate,
+                maxLines = 1
+            )
+        }
+
+        // Condition & Rain Indicator (Center column flexes to fill available space)
         Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .weight(1f)
+                .padding(horizontal = 6.dp)
         ) {
-            // Day & Date (Flexible weight)
-            Column(modifier = Modifier.weight(1.1f)) {
+            Icon(
+                imageVector = if (day.rainProbability > 30) Icons.Default.WaterDrop else Icons.Default.WbSunny,
+                contentDescription = null,
+                tint = if (day.rainProbability > 30) GramBlue else GramGold,
+                modifier = Modifier.size(20.dp)
+            )
+            Column(modifier = Modifier.weight(1f, fill = false)) {
                 Text(
-                    text = day.dayName,
-                    fontSize = 14.sp,
+                    text = day.condition,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = GramNavy,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "वर्षा: ${day.rainProbability}%",
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    color = GramNavy
-                )
-                Text(
-                    text = day.date,
-                    fontSize = 11.sp,
-                    color = GramSlate
+                    color = if (day.rainProbability > 30) GramBlue else GramSlate,
+                    maxLines = 1
                 )
             }
+        }
 
-            // Condition & Rain Indicator (Center column)
+        // Min & Max Temp Pill (Neat right-aligned capsule)
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = GramBackground,
+            border = BorderStroke(0.5.dp, GramBorder)
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.weight(1.5f)
-            ) {
-                Icon(
-                    imageVector = if (day.rainProbability > 30) Icons.Default.WaterDrop else Icons.Default.WbSunny,
-                    contentDescription = null,
-                    tint = if (day.rainProbability > 30) GramBlue else GramGold,
-                    modifier = Modifier.size(18.dp)
-                )
-                Column {
-                    Text(
-                        text = day.condition,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = GramNavy,
-                        maxLines = 1
-                    )
-                    Text(
-                        text = "वर्षा: ${day.rainProbability}%",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (day.rainProbability > 30) GramBlue else GramSlate
-                    )
-                }
-            }
-
-            // Min & Max Temp (Right column)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = "${day.maxTemp.toInt()}°",
-                    fontSize = 16.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = GramPrimaryDark
                 )
                 Text(
                     text = "/",
-                    fontSize = 13.sp,
-                    color = GramBorder
+                    fontSize = 11.sp,
+                    color = GramSlate.copy(alpha = 0.5f)
                 )
                 Text(
                     text = "${day.minTemp.toInt()}°",
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = GramSlate
                 )

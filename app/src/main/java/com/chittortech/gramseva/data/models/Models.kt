@@ -3,6 +3,17 @@ package com.chittortech.gramseva.data.models
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class UserLocation(
+    val nameHindi: String,
+    val nameEnglish: String,
+    val district: String,
+    val state: String,
+    val lat: Double,
+    val lon: Double,
+    val isGpsDetected: Boolean = false
+)
+
+@Serializable
 data class MandiItem(
     val id: String,
     val commodity: String,       // e.g. "लहसुन (Garlic)"
@@ -10,13 +21,14 @@ data class MandiItem(
     val district: String,        // e.g. "Chittorgarh"
     val state: String = "Rajasthan",
     val variety: String = "Desi",
+    val grade: String = "FAQ",
     val minPrice: Int,           // in ₹/Quintal
     val maxPrice: Int,
     val modalPrice: Int,
     val arrivalDate: String,
     val trend: String = "स्थिर",  // "तेज (Bullish)", "मंदा (Bearish)", "स्थिर (Stable)"
     val isHotCrop: Boolean = false,
-    val arrivalsTons: Double = 45.0
+    val arrivalsTons: Double? = null
 )
 
 @Serializable

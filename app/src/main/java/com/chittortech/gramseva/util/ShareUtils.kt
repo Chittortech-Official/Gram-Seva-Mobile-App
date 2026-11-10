@@ -15,7 +15,11 @@ object ShareUtils {
             appendLine("💰 *मॉडल भाव:* ₹${item.modalPrice} / क्विंटल")
             appendLine("📊 रेंज: ₹${item.minPrice} - ₹${item.maxPrice}")
             appendLine("📈 बाजार रुख: ${item.trend}")
-            appendLine("🚛 आवक: ~${item.arrivalsTons} टन")
+            if (item.arrivalsTons != null && item.arrivalsTons > 0) {
+                appendLine("🚛 आवक: ~${item.arrivalsTons} टन")
+            } else {
+                appendLine("🏷️ गुणवत्ता/ग्रेड: ${item.grade}")
+            }
             appendLine()
             appendLine("📍 *चित्तौड़टेक (ChittorTech) ग्राम-सेवा मोबाइल ऐप*")
             appendLine("📱 किसानों का सच्चा साथी | सटीक भाव व मौसम अलर्ट")

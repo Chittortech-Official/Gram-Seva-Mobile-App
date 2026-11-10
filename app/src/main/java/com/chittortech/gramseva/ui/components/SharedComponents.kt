@@ -134,6 +134,8 @@ fun KpiCard(
 fun GramTopBar(
     title: String = "ग्राम-सेवा (GramSeva)",
     subtitle: String = "सटीक मंडी भाव • लाइव मौसम • ग्रामीण सुविधाएं",
+    locationText: String? = null,
+    onLocationClick: (() -> Unit)? = null,
     onNotificationClick: (() -> Unit)? = null,
     onRefreshClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -147,7 +149,7 @@ fun GramTopBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -174,7 +176,7 @@ fun GramTopBar(
                 Column {
                     Text(
                         text = title,
-                        fontSize = 16.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = GramNavy,
                         maxLines = 1,
@@ -190,11 +192,49 @@ fun GramTopBar(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (onLocationClick != null && !locationText.isNullOrBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = GramPrimary.copy(alpha = 0.08f),
+                        border = BorderStroke(1.dp, GramPrimary.copy(alpha = 0.35f)),
+                        modifier = Modifier.clickable { onLocationClick() }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = "Location",
+                                tint = GramPrimary,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = locationText,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GramPrimary,
+                                maxLines = 1
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                tint = GramPrimary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
+                }
+
                 if (onRefreshClick != null) {
                     IconButton(
                         onClick = onRefreshClick,
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(34.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,

@@ -1,5 +1,8 @@
 package com.chittortech.gramseva.ui.screens
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,7 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chittortech.gramseva.data.location.LocationProvider
 import com.chittortech.gramseva.data.models.MandiItem
+import com.chittortech.gramseva.data.models.UserLocation
 import com.chittortech.gramseva.data.models.WeatherInfo
 import com.chittortech.gramseva.data.repository.GramSevaRepository
 import com.chittortech.gramseva.ui.components.*
@@ -40,16 +45,20 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    var currentLocation by remember { mutableStateOf(LocationProvider.defaultLocation) }
+    var showLocationSheet by remember { mutableStateOf(false) }
+    var isDetectingGps by remember { mutableStateOf(false) }
+
     var weather by remember {
         mutableStateOf(
             WeatherInfo(
-                city = "चित्तौड़गढ़",
-                temperature = 28.5,
+                city = currentLocation.nameHindi,
+                temperature = 30.7,
                 condition = "साफ धूप (Clear Sky)",
-                rainProbability = 10,
-                windSpeed = 7.5,
-                humidity = 40,
-                farmerAdvisory = "✅ मौसम अनुकूल: मंडी ले जाने और फसलों की कटाई के लिए उत्तम दिन।"
+                rainProbability = 0,
+                windSpeed = 3.4,
+                humidity = 28,
+                farmerAdvisory = "✅ मौसम अनुकूल: रबी फसलों की बुवाई, सिंचाई व मंडी परिवहन के लिए उत्तम दिन।"
             )
         )
     }
@@ -57,7 +66,7 @@ fun HomeScreen(
     var selectedCropFilter by remember { mutableStateOf("सभी फसलें") }
     val cropFilters = listOf("सभी फसलें", "लहसुन", "प्याज", "गेहूं", "सरसों", "सोयाबीन", "मक्का", "चना")
 
-    var allMandiPrices by remember { mutableStateOf(repository.getMandiPrices()) }
+    var allMandiPrices by remember { mutableStateOf(repository.getMandiPrices(currentLocation.state)) }
     val filteredMandiPrices = remember(selectedCropFilter, allMandiPrices) {
         if (selectedCropFilter == "सभी फसलें") allMandiPrices
         else allMandiPrices.filter { it.commodity.contains(selectedCropFilter, ignoreCase = true) }
@@ -67,10 +76,56 @@ fun HomeScreen(
     var pincodeResults by remember { mutableStateOf(emptyList<com.chittortech.gramseva.data.models.PincodeRecord>()) }
     var isSearchingPincode by remember { mutableStateOf(false) }
 
-    // Fetch live weather and live government mandi feed on startup
-    LaunchedEffect(Unit) {
-        weather = repository.fetchWeather()
-        allMandiPrices = repository.fetchLiveMandiPrices()
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        val granted = perms[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                perms[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            coroutineScope.launch {
+                isDetectingGps = true
+                val detected = LocationProvider.detectCurrentLocation(context)
+                if (detected != null) {
+                    currentLocation = detected
+                    weather = repository.fetchWeather(detected.lat, detected.lon, detected.nameHindi)
+                    allMandiPrices = repository.fetchLiveMandiPrices(state = detected.state)
+                }
+                isDetectingGps = false
+                showLocationSheet = false
+            }
+        }
+    }
+
+    fun triggerGpsDetection() {
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
+
+    // Fetch live weather and live government mandi feed on startup or location change
+    LaunchedEffect(currentLocation) {
+        weather = repository.fetchWeather(
+            lat = currentLocation.lat,
+            lon = currentLocation.lon,
+            cityName = currentLocation.nameHindi
+        )
+        allMandiPrices = repository.fetchLiveMandiPrices(state = currentLocation.state)
+    }
+
+    if (showLocationSheet) {
+        LocationSelectorSheet(
+            currentLocation = currentLocation,
+            onLocationSelected = { newLoc ->
+                currentLocation = newLoc
+                showLocationSheet = false
+            },
+            onDetectGpsClick = { triggerGpsDetection() },
+            isDetectingGps = isDetectingGps,
+            onDismissRequest = { showLocationSheet = false }
+        )
     }
 
     Column(
@@ -80,18 +135,20 @@ fun HomeScreen(
     ) {
         GramTopBar(
             title = "ग्राम-सेवा (GramSeva)",
-            subtitle = "चित्तौड़गढ़ व राजस्थान • स्मार्ट ग्रामीण सूचना तंत्र",
+            subtitle = "${LocationProvider.stateDisplayNameMap[currentLocation.state] ?: currentLocation.state} • स्मार्ट ग्रामीण सूचना तंत्र",
+            locationText = currentLocation.nameHindi,
+            onLocationClick = { showLocationSheet = true },
             onRefreshClick = {
                 coroutineScope.launch {
-                    weather = repository.fetchWeather()
-                    allMandiPrices = repository.fetchLiveMandiPrices()
+                    weather = repository.fetchWeather(currentLocation.lat, currentLocation.lon, currentLocation.nameHindi)
+                    allMandiPrices = repository.fetchLiveMandiPrices(state = currentLocation.state)
                 }
             }
         )
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 36.dp)
+            contentPadding = PaddingValues(bottom = 12.dp)
         ) {
             // ─── 1. Live Weather & Farmer Advisory Card ───────────────────────
             item {
@@ -228,8 +285,8 @@ fun HomeScreen(
                 ) {
                     KpiCard(
                         title = "सक्रिय मंडियां",
-                        value = "18 Mandis",
-                        subtitle = "LIVE",
+                        value = "18+ मंडियां",
+                        subtitle = "लाइव भाव",
                         icon = Icons.Default.Storefront,
                         iconBg = GramPrimaryLight,
                         iconTint = GramPrimary,
@@ -240,7 +297,7 @@ fun HomeScreen(
                     KpiCard(
                         title = "लहसुन सर्वोच्च भाव",
                         value = "₹21,500",
-                        subtitle = "NEEMUCH",
+                        subtitle = "नीमच मंडी",
                         icon = Icons.Default.TrendingUp,
                         iconBg = GramGreenLight,
                         iconTint = GramGreen,

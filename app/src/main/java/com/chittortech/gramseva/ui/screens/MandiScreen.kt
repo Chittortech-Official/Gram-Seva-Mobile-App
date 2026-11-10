@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chittortech.gramseva.data.location.LocationProvider
 import com.chittortech.gramseva.data.models.MandiItem
 import com.chittortech.gramseva.data.repository.GramSevaRepository
 import com.chittortech.gramseva.ui.components.SectionHeader
@@ -42,16 +43,19 @@ fun MandiScreen(
     var selectedTab by remember { mutableIntStateOf(0) } // 0: भाव सूची, 1: अंतर-मंडी तुलना
     var searchQuery by remember { mutableStateOf("") }
     var selectedCropFilter by remember { mutableStateOf("सभी") }
+    var selectedState by remember { mutableStateOf("सभी राज्य") }
 
-    val cropFilters = listOf("सभी", "लहसुन", "प्याज", "गेहूं", "सरसों", "सोयाबीन", "चना", "मक्का", "तिल")
+    val cropFilters = listOf("सभी", "लहसुन", "प्याज", "गेहूं", "सरसों", "सोयाबीन", "चना", "मक्का", "कपास", "धान", "जीरा", "करेला", "लौकी", "टमाटर", "आलू", "केला", "सूरन", "भिंडी")
     var allMandiItems by remember { mutableStateOf(repository.getMandiPrices()) }
     var isLiveFeed by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
 
-    // Fetch live government Agmarknet prices on screen launch
-    LaunchedEffect(Unit) {
-        allMandiItems = repository.fetchLiveMandiPrices()
+    // Fetch live government Agmarknet prices on state change or startup
+    LaunchedEffect(selectedState) {
+        isRefreshing = true
+        allMandiItems = repository.fetchLiveMandiPrices(state = selectedState)
         isLiveFeed = true
+        isRefreshing = false
     }
 
     // Comparison crops
@@ -68,7 +72,8 @@ fun MandiScreen(
                 item.commodity.contains(searchQuery, ignoreCase = true) ||
                         item.market.contains(searchQuery, ignoreCase = true) ||
                         item.variety.contains(searchQuery, ignoreCase = true) ||
-                        item.district.contains(searchQuery, ignoreCase = true)
+                        item.district.contains(searchQuery, ignoreCase = true) ||
+                        item.state.contains(searchQuery, ignoreCase = true)
             }
             matchesCrop && matchesSearch
         }
@@ -110,7 +115,7 @@ fun MandiScreen(
                                 border = BorderStroke(1.dp, if (isLiveFeed) GramGreen else GramPrimary)
                             ) {
                                 Text(
-                                    text = if (isLiveFeed) "LIVE OGD" else "OFFLINE",
+                                    text = if (isLiveFeed) "🟢 लाइव APMC" else "ऑफलाइन डेटा",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (isLiveFeed) GramGreen else GramPrimaryDark,
@@ -121,7 +126,8 @@ fun MandiScreen(
 
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Agmarknet भारत सरकार • राजस्थान व एमपी मंडियां",
+                            text = if (selectedState == "सभी राज्य") "Agmarknet भारत सरकार • पूरा भारत लाइव भाव"
+                                   else "Agmarknet भारत सरकार • ${LocationProvider.stateDisplayNameMap[selectedState] ?: selectedState} लाइव भाव",
                             fontSize = 11.sp,
                             color = GramSlate
                         )
@@ -136,7 +142,7 @@ fun MandiScreen(
                             onClick = {
                                 coroutineScope.launch {
                                     isRefreshing = true
-                                    allMandiItems = repository.fetchLiveMandiPrices()
+                                    allMandiItems = repository.fetchLiveMandiPrices(state = selectedState)
                                     isLiveFeed = true
                                     isRefreshing = false
                                 }
@@ -211,7 +217,7 @@ fun MandiScreen(
         if (selectedTab == 0) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 28.dp)
+                contentPadding = PaddingValues(bottom = 12.dp)
             ) {
                 // Search Input & Filter Chips
                 item {
@@ -242,6 +248,34 @@ fun MandiScreen(
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
+
+                        // State Chips Row (All India & States)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            LocationProvider.supportedStates.forEach { stateKey ->
+                                val isSelected = selectedState.equals(stateKey, ignoreCase = true)
+                                val label = LocationProvider.stateDisplayNameMap[stateKey] ?: stateKey
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { selectedState = stateKey },
+                                    label = { Text(label, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = GramGold,
+                                        selectedLabelColor = Color.White,
+                                        containerColor = GramCardWhite,
+                                        labelColor = GramNavy
+                                    ),
+                                    border = BorderStroke(1.dp, if (isSelected) GramGold else GramBorder)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         // Category Chips
                         Row(
@@ -406,14 +440,18 @@ fun MandiDetailedCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 5.dp),
-        shape = RoundedCornerShape(14.dp),
+            .padding(horizontal = 14.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = GramCardWhite),
         border = BorderStroke(1.dp, GramBorder),
-        elevation = CardDefaults.cardElevation(1.5.dp)
+        elevation = CardDefaults.cardElevation(1.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            // Header Row: Commodity + Badges
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            // Header Row: Crop Name, Badges, WhatsApp Share
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -428,7 +466,9 @@ fun MandiDetailedCard(
                         text = item.commodity,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = GramNavy
+                        color = GramNavy,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     if (item.isHotCrop) {
                         Surface(
@@ -437,91 +477,114 @@ fun MandiDetailedCard(
                             border = BorderStroke(0.5.dp, GramGold)
                         ) {
                             Text(
-                                text = "HOT 🔥",
+                                text = "तेज मांग 🔥",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = GramGold,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.5.dp)
                             )
                         }
                     }
                 }
 
-                StatusBadge(status = item.trend)
-            }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    StatusBadge(status = item.trend)
 
-            Text(
-                text = "${item.market} (${item.state}) • ${item.variety}",
-                fontSize = 12.sp,
-                color = GramSlate
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(color = GramBorder.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Price Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "मॉडल भाव",
-                        fontSize = 10.sp,
-                        color = TextMuted
-                    )
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = "₹${item.modalPrice}",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = GramPrimary
-                        )
-                        Text(
-                            text = " /क्विंटल",
-                            fontSize = 11.sp,
-                            color = GramSlate,
-                            modifier = Modifier.padding(bottom = 2.dp)
+                    // Compact Circular WhatsApp Share
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF25D366).copy(alpha = 0.12f))
+                            .clickable { onShareClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Share,
+                            contentDescription = "Share",
+                            tint = Color(0xFF25D366),
+                            modifier = Modifier.size(15.dp)
                         )
                     }
                 }
-
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "रेंज: ₹${item.minPrice} - ₹${item.maxPrice}",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = GramNavy
-                    )
-                    Text(
-                        text = "आवक: ~${item.arrivalsTons} टन • ${item.arrivalDate}",
-                        fontSize = 10.sp,
-                        color = GramGreen,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
-            // WhatsApp Share Pill Button
-            OutlinedButton(
-                onClick = onShareClick,
-                shape = RoundedCornerShape(8.dp),
-                border = BorderStroke(1.dp, Color(0xFF25D366).copy(alpha = 0.5f)),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1E7E34)),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                modifier = Modifier.fillMaxWidth()
+            // Subtitle: Market, State, Variety
+            Text(
+                text = "${item.market} (${item.state}) • ${item.variety}",
+                fontSize = 11.sp,
+                color = GramSlate,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(7.dp))
+
+            // Stats Bottom Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(GramBackground, shape = RoundedCornerShape(8.dp))
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Outlined.Share, contentDescription = null, tint = Color(0xFF25D366), modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "यह भाव व्हाट्सएप पर शेयर करें",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    Text(
+                        text = "मॉडल:",
+                        fontSize = 11.sp,
+                        color = TextMuted
+                    )
+                    Text(
+                        text = "₹${item.modalPrice}",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = GramPrimary
+                    )
+                    Text(
+                        text = "/क्विं",
+                        fontSize = 10.sp,
+                        color = GramSlate,
+                        modifier = Modifier.padding(bottom = 1.dp)
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "रेंज: ₹${item.minPrice}-₹${item.maxPrice}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = GramNavy
+                    )
+                    val liveSub = if (item.arrivalsTons != null && item.arrivalsTons > 0) {
+                        "~${item.arrivalsTons} टन"
+                    } else {
+                        item.grade
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = GramGreenLight
+                    ) {
+                        Text(
+                            text = liveSub,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GramGreen,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -570,8 +633,13 @@ fun MandiComparisonRow(item: MandiItem, highestPrice: Int) {
                         }
                     }
                 }
+                val infoSub = if (item.arrivalsTons != null && item.arrivalsTons > 0) {
+                    "${item.district} (${item.state}) • आवक: ~${item.arrivalsTons} टन"
+                } else {
+                    "${item.district} (${item.state}) • ग्रेड: ${item.grade}"
+                }
                 Text(
-                    text = "${item.district} (${item.state}) • आवक: ~${item.arrivalsTons} टन",
+                    text = infoSub,
                     fontSize = 11.sp,
                     color = GramSlate
                 )
