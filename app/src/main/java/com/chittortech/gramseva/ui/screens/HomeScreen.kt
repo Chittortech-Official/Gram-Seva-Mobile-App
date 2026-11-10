@@ -360,6 +360,11 @@ fun HomeScreen(
                     onShareClick = { ShareUtils.shareMandiItem(context, item) }
                 )
             }
+
+            // ─── 5. Official GramSeva Footer ───────────────────────────────────
+            item {
+                com.chittortech.gramseva.ui.components.GramSevaFooter()
+            }
         }
     }
 }

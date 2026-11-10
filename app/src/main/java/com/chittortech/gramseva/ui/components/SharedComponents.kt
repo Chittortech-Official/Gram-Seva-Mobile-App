@@ -292,3 +292,55 @@ fun SectionHeader(
     }
 }
 
+// ─── Branded Official GramSeva Footer ─────────────────────────────────────────
+@Composable
+fun GramSevaFooter() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 20.dp, bottom = 28.dp, start = 16.dp, end = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            shape = androidx.compose.foundation.shape.CircleShape,
+            color = Color.White,
+            border = BorderStroke(1.dp, GramBorder),
+            shadowElevation = 1.dp,
+            modifier = Modifier.size(36.dp)
+        ) {
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(id = com.chittortech.gramseva.R.drawable.app_logo),
+                contentDescription = "GramSeva Logo",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = "ग्राम-सेवा (GramSeva) • चित्तौड़गढ़",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = GramNavy
+        )
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Text(
+            text = "कृषि उपज मंडी, उपग्रह मौसम एवं किसान सहायता डिजिटल मंच",
+            fontSize = 10.sp,
+            color = GramSlate,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+
+        Text(
+            text = "चित्तौड़गढ़ ज़िला • आत्मनिर्भर किसान, समृद्ध राजस्थान v2.4",
+            fontSize = 9.sp,
+            color = TextMuted,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+    }
+}
+

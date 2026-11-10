@@ -115,18 +115,40 @@ fun WeatherScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                text = "चित्तौड़गढ़ ज़िला मौसम रडार",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = GramNavy
-                            )
-                            Text(
-                                text = "उपग्रह आधारित लाइव मौसम एवं 7 दिन किसान सलाह",
-                                fontSize = 11.sp,
-                                color = GramSlate
-                            )
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Surface(
+                                shape = androidx.compose.foundation.shape.CircleShape,
+                                color = Color.White,
+                                border = BorderStroke(1.dp, GramBorder),
+                                shadowElevation = 1.dp,
+                                modifier = Modifier.size(38.dp)
+                            ) {
+                                androidx.compose.foundation.Image(
+                                    painter = androidx.compose.ui.res.painterResource(id = com.chittortech.gramseva.R.drawable.app_logo),
+                                    contentDescription = "GramSeva Logo",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
+                                )
+                            }
+
+                            Column {
+                                Text(
+                                    text = "चित्तौड़गढ़ मौसम रडार",
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GramNavy
+                                )
+                                Text(
+                                    text = "उपग्रह आधारित लाइव मौसम व 7-दिन सलाह",
+                                    fontSize = 11.sp,
+                                    color = GramSlate
+                                )
+                            }
                         }
 
                         IconButton(
@@ -268,6 +290,27 @@ fun WeatherScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = GramNavy
                                     )
+
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = Color.White,
+                                        border = BorderStroke(0.5.dp, GramBorder)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        ) {
+                                            androidx.compose.foundation.Image(
+                                                painter = androidx.compose.ui.res.painterResource(id = com.chittortech.gramseva.R.drawable.app_logo),
+                                                contentDescription = null,
+                                                modifier = Modifier
+                                                    .size(14.dp)
+                                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                            )
+                                            Text("ग्राम-सेवा", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = GramPrimaryDark)
+                                        }
+                                    }
                                 }
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
@@ -453,6 +496,11 @@ fun WeatherScreen(
                     }
                 }
             }
+        }
+
+        // ─── 6. Official GramSeva Footer ──────────────────────────────────────
+        item {
+            com.chittortech.gramseva.ui.components.GramSevaFooter()
         }
     }
 }

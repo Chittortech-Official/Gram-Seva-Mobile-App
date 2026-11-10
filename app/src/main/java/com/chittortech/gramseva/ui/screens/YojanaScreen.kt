@@ -87,17 +87,40 @@ fun YojanaScreen(
             shadowElevation = 2.dp
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "ग्रामीण सुविधाएं व योजना रडार",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = GramNavy
-                )
-                Text(
-                    text = "सरकारी योजनाएं • पात्रता जांच • डाकघर व पिनकोड निर्देशिका",
-                    fontSize = 11.sp,
-                    color = GramSlate
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Surface(
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                        color = Color.White,
+                        border = BorderStroke(1.dp, GramBorder),
+                        shadowElevation = 1.dp,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = com.chittortech.gramseva.R.drawable.app_logo),
+                            contentDescription = "GramSeva Logo",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "ग्रामीण सुविधाएं व योजनाएं",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GramNavy
+                        )
+                        Text(
+                            text = "सरकारी योजनाएं • पात्रता जांच • डाकघर निर्देशिका",
+                            fontSize = 11.sp,
+                            color = GramSlate
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -204,6 +227,10 @@ fun YojanaScreen(
 
                 items(filteredYojanas) { yojana ->
                     YojanaInteractiveCard(yojana = yojana)
+                }
+
+                item {
+                    com.chittortech.gramseva.ui.components.GramSevaFooter()
                 }
             }
         }
@@ -382,6 +409,10 @@ fun YojanaScreen(
                             StatusBadge(status = po.deliveryStatus, isPositive = true)
                         }
                     }
+                }
+
+                item {
+                    com.chittortech.gramseva.ui.components.GramSevaFooter()
                 }
             }
         }

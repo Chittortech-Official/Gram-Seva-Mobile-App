@@ -97,40 +97,61 @@ fun MandiScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White,
+                            border = BorderStroke(1.dp, GramBorder),
+                            shadowElevation = 1.dp,
+                            modifier = Modifier.size(38.dp)
                         ) {
-                            Text(
-                                text = "मंडी भाव रडार",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = GramNavy
+                            androidx.compose.foundation.Image(
+                                painter = androidx.compose.ui.res.painterResource(id = com.chittortech.gramseva.R.drawable.app_logo),
+                                contentDescription = "GramSeva Logo",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape)
                             )
-
-                            // Compact fixed-size Live Badge
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isLiveFeed) GramGreenLight else GramPrimaryLight,
-                                border = BorderStroke(1.dp, if (isLiveFeed) GramGreen else GramPrimary)
-                            ) {
-                                Text(
-                                    text = if (isLiveFeed) "🟢 लाइव APMC" else "ऑफलाइन डेटा",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isLiveFeed) GramGreen else GramPrimaryDark,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                )
-                            }
                         }
 
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Agmarknet • चित्तौड़गढ़ कृषि उपज मंडियां",
-                            fontSize = 11.sp,
-                            color = GramSlate
-                        )
+                        Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "मंडी भाव रडार",
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GramNavy
+                                )
+
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (isLiveFeed) GramGreenLight else GramPrimaryLight,
+                                    border = BorderStroke(1.dp, if (isLiveFeed) GramGreen else GramPrimary)
+                                ) {
+                                    Text(
+                                        text = if (isLiveFeed) "🟢 लाइव" else "ऑफलाइन",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isLiveFeed) GramGreen else GramPrimaryDark,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(1.dp))
+                            Text(
+                                text = "Agmarknet • चित्तौड़गढ़ कृषि उपज मंडियां",
+                                fontSize = 11.sp,
+                                color = GramSlate
+                            )
+                        }
                     }
 
                     Row(
@@ -333,6 +354,10 @@ fun MandiScreen(
                         }
                     }
                 }
+
+                item {
+                    com.chittortech.gramseva.ui.components.GramSevaFooter()
+                }
             }
         }
 
@@ -427,6 +452,10 @@ fun MandiScreen(
 
                 items(comparisonItems) { item ->
                     MandiComparisonRow(item = item, highestPrice = comparisonItems.firstOrNull()?.modalPrice ?: 0)
+                }
+
+                item {
+                    com.chittortech.gramseva.ui.components.GramSevaFooter()
                 }
             }
         }
