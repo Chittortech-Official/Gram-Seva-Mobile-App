@@ -28,28 +28,27 @@ fun StatusBadge(
     isPositive: Boolean? = null
 ) {
     val (bg, fg) = when {
-        isPositive == true -> GramGreenLight to GramGreen
-        isPositive == false -> GramRedLight to GramRed
-        status.contains("तेज", ignoreCase = true) || status.contains("HIGH", ignoreCase = true) -> GramGreenLight to GramGreen
-        status.contains("मंदा", ignoreCase = true) || status.contains("LOW", ignoreCase = true) -> GramRedLight to GramRed
-        status.contains("अलर्ट", ignoreCase = true) || status.contains("ALERT", ignoreCase = true) -> GramAmberLight to GramAmber
-        else -> GramPrimaryLight to GramPrimary
+        isPositive == true -> Color(0xFFE8F5E9) to Color(0xFF2E7D32)
+        isPositive == false -> Color(0xFFFFEBEE) to Color(0xFFC62828)
+        status.contains("तेज", ignoreCase = true) || status.contains("+") || status.contains("HIGH", ignoreCase = true) -> Color(0xFFE8F5E9) to Color(0xFF2E7D32)
+        status.contains("मंदा", ignoreCase = true) || status.contains("-") || status.contains("LOW", ignoreCase = true) -> Color(0xFFFFEBEE) to Color(0xFFC62828)
+        status.contains("अलर्ट", ignoreCase = true) || status.contains("ALERT", ignoreCase = true) -> Color(0xFFFEF3C7) to Color(0xFFB45309)
+        else -> Color(0xFFF1F5F9) to Color(0xFF475569)
     }
 
     Surface(
         shape = RoundedCornerShape(6.dp),
         color = bg,
-        border = BorderStroke(1.dp, fg.copy(alpha = 0.25f)),
         modifier = modifier
     ) {
         Text(
-            text = status.uppercase(),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.ExtraBold,
+            text = status,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
             color = fg,
             maxLines = 1,
             softWrap = false,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.5.dp)
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.5.dp)
         )
     }
 }
@@ -132,8 +131,8 @@ fun KpiCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GramTopBar(
-    title: String = "ग्राम-सेवा (GramSeva)",
-    subtitle: String = "सटीक मंडी भाव • लाइव मौसम • ग्रामीण सुविधाएं",
+    title: String = "ग्राम-सेवा",
+    subtitle: String = "चित्तौड़गढ़ ज़िला • किसान साथी",
     locationText: String? = null,
     onLocationClick: (() -> Unit)? = null,
     onNotificationClick: (() -> Unit)? = null,
@@ -142,14 +141,14 @@ fun GramTopBar(
 ) {
     Surface(
         color = GramCardWhite,
-        shadowElevation = 3.dp,
-        border = BorderStroke(1.dp, GramBorder),
+        shadowElevation = 1.dp,
+        border = BorderStroke(0.5.dp, Color(0xFFF1F5F9)),
         modifier = modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -158,55 +157,54 @@ fun GramTopBar(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(GramPrimary),
-                    contentAlignment = Alignment.Center
+                // Farmer Logo Medallion
+                Surface(
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                    color = Color.White,
+                    shadowElevation = 1.dp,
+                    modifier = Modifier.size(38.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Agriculture,
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = com.chittortech.gramseva.R.drawable.app_logo),
                         contentDescription = "GramSeva Logo",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(androidx.compose.foundation.shape.CircleShape)
                     )
                 }
 
                 Column {
                     Text(
                         text = title,
-                        fontSize = 15.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = GramNavy,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        maxLines = 1
                     )
                     Text(
                         text = subtitle,
                         fontSize = 11.sp,
                         color = GramSlate,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        maxLines = 1
                     )
                 }
             }
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (onLocationClick != null && !locationText.isNullOrBlank()) {
                     Surface(
-                        shape = RoundedCornerShape(18.dp),
-                        color = GramPrimary.copy(alpha = 0.08f),
-                        border = BorderStroke(1.dp, GramPrimary.copy(alpha = 0.35f)),
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                         modifier = Modifier.clickable { onLocationClick() }
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.5.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
@@ -218,13 +216,13 @@ fun GramTopBar(
                                 text = locationText,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = GramPrimary,
+                                color = GramNavy,
                                 maxLines = 1
                             )
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = null,
-                                tint = GramPrimary,
+                                tint = GramSlate,
                                 modifier = Modifier.size(14.dp)
                             )
                         }
@@ -234,27 +232,13 @@ fun GramTopBar(
                 if (onRefreshClick != null) {
                     IconButton(
                         onClick = onRefreshClick,
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Refresh",
-                            tint = GramPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                if (onNotificationClick != null) {
-                    IconButton(
-                        onClick = onNotificationClick,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Alerts",
-                            tint = GramNavy,
-                            modifier = Modifier.size(20.dp)
+                            tint = GramSlate,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }

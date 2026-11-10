@@ -234,8 +234,8 @@ fun WeatherScreen(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-                    border = BorderStroke(1.dp, GramBorder),
-                    elevation = CardDefaults.cardElevation(2.5.dp),
+                    border = BorderStroke(0.5.dp, GramBorder),
+                    elevation = CardDefaults.cardElevation(0.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -362,7 +362,7 @@ fun WeatherScreen(
                 WeatherMetricPill(
                     icon = Icons.Default.Air,
                     title = "हवा की गति",
-                    value = "${weather.windSpeed} km/h",
+                    value = "${String.format(java.util.Locale.US, "%.1f", weather.windSpeed)} km/h",
                     iconColor = GramAmber,
                     bgColor = GramAmberLight,
                     modifier = Modifier.weight(1f)
@@ -393,8 +393,8 @@ fun WeatherScreen(
                     .padding(horizontal = 14.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-                border = BorderStroke(1.dp, GramBorder),
-                elevation = CardDefaults.cardElevation(1.dp)
+                border = BorderStroke(0.5.dp, GramBorder),
+                elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     weather.dailyForecast.forEachIndexed { index, day ->
@@ -419,7 +419,8 @@ fun WeatherScreen(
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-                border = BorderStroke(1.dp, GramBorder)
+                border = BorderStroke(0.5.dp, GramBorder),
+                elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),
@@ -469,8 +470,8 @@ fun WeatherMetricPill(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-        border = BorderStroke(1.dp, GramBorder),
-        elevation = CardDefaults.cardElevation(1.5.dp)
+        border = BorderStroke(0.5.dp, GramBorder),
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(
             modifier = Modifier

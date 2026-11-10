@@ -150,7 +150,7 @@ fun YojanaScreen(
                         OutlinedTextField(
                             value = yojanaSearchQuery,
                             onValueChange = { yojanaSearchQuery = it },
-                            placeholder = { Text("योजना खोजें (e.g. तारबंदी, सोलर, सम्मान निधि)", fontSize = 13.sp) },
+                            placeholder = { Text("योजना खोजें (तारबंदी, सोलर, सम्मान निधि)", fontSize = 12.sp) },
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = GramPrimary) },
                             trailingIcon = {
                                 if (yojanaSearchQuery.isNotEmpty()) {
@@ -349,7 +349,8 @@ fun YojanaScreen(
                             .padding(vertical = 4.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-                        border = BorderStroke(1.dp, GramBorder)
+                        border = BorderStroke(0.5.dp, GramBorder),
+                        elevation = CardDefaults.cardElevation(0.dp)
                     ) {
                         Row(
                             modifier = Modifier
@@ -399,37 +400,31 @@ fun YojanaInteractiveCard(yojana: YojanaItem) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 5.dp)
             .clickable { isExpanded = !isExpanded },
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-        border = BorderStroke(1.dp, if (isExpanded) GramPrimary.copy(alpha = 0.5f) else GramBorder),
-        elevation = CardDefaults.cardElevation(2.dp)
+        border = BorderStroke(0.5.dp, if (isExpanded) GramPrimary.copy(alpha = 0.5f) else GramBorder),
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = yojana.titleHindi,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = GramNavy
-                    )
-                    Text(
-                        text = yojana.titleEnglish,
-                        fontSize = 11.sp,
-                        color = GramSlate
-                    )
-                }
+                Text(
+                    text = yojana.titleHindi,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GramNavy,
+                    modifier = Modifier.weight(1f)
+                )
 
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = GramGoldLight,
-                    border = BorderStroke(1.dp, GramGold.copy(alpha = 0.4f)),
+                    border = BorderStroke(0.5.dp, GramGold.copy(alpha = 0.4f)),
                     modifier = Modifier.padding(start = 8.dp)
                 ) {
                     Text(
@@ -442,13 +437,13 @@ fun YojanaInteractiveCard(yojana: YojanaItem) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Benefit Amount Callout Box
             Surface(
                 shape = RoundedCornerShape(8.dp),
                 color = GramPrimaryLight,
-                border = BorderStroke(1.dp, GramPrimary.copy(alpha = 0.2f)),
+                border = BorderStroke(0.5.dp, GramPrimary.copy(alpha = 0.2f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(

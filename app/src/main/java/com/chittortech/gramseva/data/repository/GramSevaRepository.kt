@@ -125,15 +125,15 @@ class GramSevaRepository {
     }
 
     private fun getWeatherCondition(code: Int): String = when (code) {
-        0 -> "साफ धूप (Clear Sky)"
-        1, 2, 3 -> "हल्के बादल (Partly Cloudy)"
-        45, 48 -> "धुंध / कोहरा (Foggy)"
-        51, 53, 55 -> "हल्की बूंदाबांदी (Drizzle)"
-        61, 63, 65 -> "बारिश (Rainfall)"
-        71, 73, 75 -> "ओलावृष्टि / ठंड (Hail/Cold)"
-        80, 81, 82 -> "तेज बौछारें (Rain Showers)"
-        95, 96, 99 -> "गरज-चमक के साथ बारिश (Thunderstorm)"
-        else -> "मौसम सामान्य (Fair Weather)"
+        0 -> "साफ धूप"
+        1, 2, 3 -> "हल्के बादल"
+        45, 48 -> "धुंध व कोहरा"
+        51, 53, 55 -> "हल्की बूंदाबांदी"
+        61, 63, 65 -> "बारिश"
+        71, 73, 75 -> "शीतलहर / ओलावृष्टि"
+        80, 81, 82 -> "तेज बौछारें"
+        95, 96, 99 -> "गरज-चमक के साथ बारिश"
+        else -> "मौसम सामान्य"
     }
 
     private fun generateFarmerAdvisory(code: Int, temp: Double): String = when {
@@ -152,7 +152,7 @@ class GramSevaRepository {
     private fun getFallbackDailyForecast(baseTemp: Double): List<DailyForecast> {
         val days = listOf("आज", "कल", "परसों", "शनिवार", "रविवार", "सोमवार", "मंगलवार")
         val conditions = listOf(
-            "साफ धूप (Clear)", "हल्के बादल", "साफ धूप (Clear)",
+            "साफ धूप", "हल्के बादल", "साफ धूप",
             "हल्की हवा", "साफ मौसम", "धूप खिली", "साफ आसमान"
         )
         return days.mapIndexed { idx, day ->
@@ -189,6 +189,8 @@ class GramSevaRepository {
 
             for (i in 0 until postOffices.length()) {
                 val po = postOffices.getJSONObject(i)
+                val rawStatus = po.optString("DeliveryStatus", "Delivery")
+                val cleanStatus = if (rawStatus.equals("Delivery", ignoreCase = true)) "वितरण उपलब्ध" else "वितरण रहित"
                 list.add(
                     PincodeRecord(
                         pincode = cleanPin,
@@ -196,7 +198,7 @@ class GramSevaRepository {
                         district = po.optString("District"),
                         state = po.optString("State"),
                         division = po.optString("Division"),
-                        deliveryStatus = po.optString("DeliveryStatus", "Delivery")
+                        deliveryStatus = cleanStatus
                     )
                 )
             }
@@ -209,31 +211,31 @@ class GramSevaRepository {
     private fun getOfflinePincodeFallback(pin: String): List<PincodeRecord> {
         val master = mapOf(
             "312001" to listOf(
-                PincodeRecord("312001", "Chittorgarh H.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "Delivery"),
-                PincodeRecord("312001", "Collectorate Chittorgarh S.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "Delivery"),
-                PincodeRecord("312001", "Senthi B.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "Delivery"),
-                PincodeRecord("312001", "Chanderiya S.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "Delivery")
+                PincodeRecord("312001", "Chittorgarh H.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "वितरण उपलब्ध"),
+                PincodeRecord("312001", "Collectorate Chittorgarh S.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "वितरण उपलब्ध"),
+                PincodeRecord("312001", "Senthi B.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "वितरण उपलब्ध"),
+                PincodeRecord("312001", "Chanderiya S.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "वितरण उपलब्ध")
             ),
             "312601" to listOf(
-                PincodeRecord("312601", "Nimbahera H.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "Delivery"),
-                PincodeRecord("312601", "Mandi Yard Nimbahera S.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "Delivery"),
-                PincodeRecord("312601", "Kailash Nagar S.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "Delivery")
+                PincodeRecord("312601", "Nimbahera H.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "वितरण उपलब्ध"),
+                PincodeRecord("312601", "Mandi Yard Nimbahera S.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "वितरण उपलब्ध"),
+                PincodeRecord("312601", "Kailash Nagar S.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "वितरण उपलब्ध")
             ),
             "312202" to listOf(
-                PincodeRecord("312202", "Kapasan S.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "Delivery"),
-                PincodeRecord("312202", "Dhamana B.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "Delivery")
+                PincodeRecord("312202", "Kapasan S.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "वितरण उपलब्ध"),
+                PincodeRecord("312202", "Dhamana B.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "वितरण उपलब्ध")
             ),
             "312023" to listOf(
-                PincodeRecord("312023", "Begun S.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "Delivery"),
-                PincodeRecord("312023", "Chechi B.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "Delivery")
+                PincodeRecord("312023", "Begun S.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "वितरण उपलब्ध"),
+                PincodeRecord("312023", "Chechi B.O", "Chittorgarh", "Rajasthan", "Chittorgarh Division", "वितरण उपलब्ध")
             ),
             "458441" to listOf(
-                PincodeRecord("458441", "Neemuch H.O", "Neemuch", "Madhya Pradesh", "Mandsaur Division", "Delivery"),
-                PincodeRecord("458441", "Krishi Upaj Mandi Neemuch S.O", "Neemuch", "Madhya Pradesh", "Mandsaur Division", "Delivery")
+                PincodeRecord("458441", "Neemuch H.O", "Neemuch", "Madhya Pradesh", "Mandsaur Division", "वितरण उपलब्ध"),
+                PincodeRecord("458441", "Krishi Upaj Mandi Neemuch S.O", "Neemuch", "Madhya Pradesh", "Mandsaur Division", "वितरण उपलब्ध")
             ),
             "324001" to listOf(
-                PincodeRecord("324001", "Kota H.O", "Kota", "Rajasthan", "Kota Division", "Delivery"),
-                PincodeRecord("324001", "Bhamashah Mandi Kota S.O", "Kota", "Rajasthan", "Kota Division", "Delivery")
+                PincodeRecord("324001", "Kota H.O", "Kota", "Rajasthan", "Kota Division", "वितरण उपलब्ध"),
+                PincodeRecord("324001", "Bhamashah Mandi Kota S.O", "Kota", "Rajasthan", "Kota Division", "वितरण उपलब्ध")
             )
         )
         return master[pin] ?: emptyList()

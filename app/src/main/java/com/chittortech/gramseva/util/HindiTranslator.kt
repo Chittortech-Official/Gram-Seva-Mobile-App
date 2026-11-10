@@ -25,7 +25,7 @@ object HindiTranslator {
         "methi" to "मेथी",
         "fenugreek" to "मेथी",
         "fenugreek(leaves)" to "हरी मेथी",
-        "mustard" to "सरसों (राई)",
+        "mustard" to "सरसों",
         "soyabean" to "सोयाबीन",
         "soybean" to "सोयाबीन",
         "wheat" to "गेहूं",
@@ -37,8 +37,8 @@ object HindiTranslator {
         "jowar" to "ज्वार",
         "sorghum" to "ज्वार",
         "paddy(basmati)" to "बासमती धान",
-        "paddy(dhan)" to "धान (चावल)",
-        "paddy" to "धान (चावल)",
+        "paddy(dhan)" to "धान",
+        "paddy" to "धान",
         "rice" to "चावल",
         "gram" to "चना",
         "bengal gram" to "चना",
@@ -47,14 +47,14 @@ object HindiTranslator {
         "green gram" to "मूंग दाल",
         "urad" to "उड़द दाल",
         "black gram" to "उड़द दाल",
-        "arhar" to "तुअर (अरहर)",
-        "tur" to "तुअर (अरहर)",
-        "pigeon pea" to "तुअर (अरहर)",
+        "arhar" to "अरहर",
+        "tur" to "अरहर",
+        "pigeon pea" to "अरहर",
         "lentil" to "मसूर",
         "masur" to "मसूर",
         "groundnut" to "मूंगफली",
         "peanut" to "मूंगफली",
-        "cotton" to "कपास (नरमा)",
+        "cotton" to "कपास",
         "guar" to "ग्वार",
         "cluster bean" to "ग्वार फली",
         "cluster beans" to "ग्वार फली",
@@ -216,7 +216,7 @@ object HindiTranslator {
         "1509" to "1509 बासमती",
         "1121" to "1121 बासमती",
         "super" to "सुपर क्वालिटी",
-        "faq" to "मानक (FAQ)",
+        "faq" to "मानक",
         "banana - green" to "कच्चा हरा केला",
         "amorphophallus" to "देसी सूरन"
     )
@@ -280,23 +280,23 @@ object HindiTranslator {
     fun translateGrade(raw: String): String {
         val clean = raw.trim().uppercase()
         return when (clean) {
-            "FAQ" -> "मानक (FAQ)"
+            "FAQ" -> "मानक"
             "LOCAL" -> "देसी"
             "MEDIUM" -> "मध्यम"
             "LARGE" -> "बोल्ड"
             "SMALL" -> "बारीक"
-            else -> if (raw.isBlank()) "मानक (FAQ)" else raw.trim()
+            else -> if (raw.isBlank()) "मानक" else raw.trim()
         }
     }
 
     fun translateTrend(trend: String): String {
         return when {
-            trend.contains("तेज", ignoreCase = true) -> "तेज (लाइव)"
-            trend.contains("मंदा", ignoreCase = true) -> "मंदा (लाइव)"
-            trend.contains("स्थिर", ignoreCase = true) -> "स्थिर (लाइव)"
-            trend.contains("BULLISH", ignoreCase = true) -> "तेज (लाइव)"
-            trend.contains("BEARISH", ignoreCase = true) -> "मंदा (लाइव)"
-            else -> "स्थिर (लाइव)"
+            trend.contains("तेज", ignoreCase = true) -> "तेज ↑"
+            trend.contains("मंदा", ignoreCase = true) -> "मंदा ↓"
+            trend.contains("स्थिर", ignoreCase = true) -> "स्थिर ↔"
+            trend.contains("BULLISH", ignoreCase = true) -> "तेज ↑"
+            trend.contains("BEARISH", ignoreCase = true) -> "मंदा ↓"
+            else -> "स्थिर ↔"
         }
     }
 }

@@ -127,7 +127,7 @@ fun MandiScreen(
 
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Agmarknet भारत सरकार • चित्तौड़गढ़ व सीमावर्ती मंडियां",
+                            text = "Agmarknet • चित्तौड़गढ़ कृषि उपज मंडियां",
                             fontSize = 11.sp,
                             color = GramSlate
                         )
@@ -444,8 +444,8 @@ fun MandiDetailedCard(
             .padding(horizontal = 14.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-        border = BorderStroke(1.dp, GramBorder),
-        elevation = CardDefaults.cardElevation(1.dp)
+        border = BorderStroke(0.5.dp, GramBorder),
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -515,23 +515,20 @@ fun MandiDetailedCard(
 
             Spacer(modifier = Modifier.height(2.dp))
 
-            // Subtitle: Market, State, Variety
+            // Subtitle: Market & Variety
             Text(
-                text = "${item.market} (${item.state}) • ${item.variety}",
+                text = "${item.market} • ${item.variety}",
                 fontSize = 11.sp,
                 color = GramSlate,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(7.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Stats Bottom Bar
+            // Stats Bottom Bar: Clean typography without nested box-in-a-box
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(GramBackground, shape = RoundedCornerShape(8.dp))
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -540,21 +537,16 @@ fun MandiDetailedCard(
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     Text(
-                        text = "मॉडल:",
-                        fontSize = 11.sp,
-                        color = TextMuted
-                    )
-                    Text(
                         text = "₹${item.modalPrice}",
-                        fontSize = 18.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = GramPrimary
                     )
                     Text(
-                        text = "/क्विं",
-                        fontSize = 10.sp,
+                        text = "/क्विंटल",
+                        fontSize = 11.sp,
                         color = GramSlate,
-                        modifier = Modifier.padding(bottom = 1.dp)
+                        modifier = Modifier.padding(bottom = 2.dp)
                     )
                 }
 
@@ -563,27 +555,23 @@ fun MandiDetailedCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "रेंज: ₹${item.minPrice}-₹${item.maxPrice}",
+                        text = "रेंज: ₹${item.minPrice} - ₹${item.maxPrice}",
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = GramNavy
+                        color = TextSecondary
                     )
-                    val liveSub = if (item.arrivalsTons != null && item.arrivalsTons > 0) {
-                        "~${item.arrivalsTons} टन"
-                    } else {
-                        item.grade
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = GramGreenLight
-                    ) {
-                        Text(
-                            text = liveSub,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = GramGreen,
-                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                        )
+                    if (item.grade.isNotBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = GramGreenLight
+                        ) {
+                            Text(
+                                text = item.grade,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GramGreen,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -602,7 +590,8 @@ fun MandiComparisonRow(item: MandiItem, highestPrice: Int) {
         colors = CardDefaults.cardColors(
             containerColor = if (isBest) GramSurfaceVariant else GramCardWhite
         ),
-        border = BorderStroke(if (isBest) 1.5.dp else 1.dp, if (isBest) GramGold else GramBorder)
+        border = BorderStroke(if (isBest) 1.dp else 0.5.dp, if (isBest) GramGold else GramBorder),
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -635,9 +624,9 @@ fun MandiComparisonRow(item: MandiItem, highestPrice: Int) {
                     }
                 }
                 val infoSub = if (item.arrivalsTons != null && item.arrivalsTons > 0) {
-                    "${item.district} (${item.state}) • आवक: ~${item.arrivalsTons} टन"
+                    "${item.district} • आवक ~${item.arrivalsTons.toInt()} टन"
                 } else {
-                    "${item.district} (${item.state}) • ग्रेड: ${item.grade}"
+                    "${item.district} • ग्रेड ${item.grade}"
                 }
                 Text(
                     text = infoSub,

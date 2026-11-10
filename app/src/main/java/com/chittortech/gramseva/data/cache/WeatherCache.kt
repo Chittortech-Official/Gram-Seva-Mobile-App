@@ -13,7 +13,7 @@ object WeatherCache {
         } else {
             26.0 // Accurate real seasonal baseline for Chittorgarh in Nov (eliminates 31°C to 26°C jump)
         }
-        val condition = prefs.getString("condition_$cityName", "साफ धूप (Clear Sky)") ?: "साफ धूप (Clear Sky)"
+        val condition = prefs.getString("condition_$cityName", "साफ धूप") ?: "साफ धूप"
         val advisory = prefs.getString("advisory_$cityName", "✅ मौसम अनुकूल: रबी फसलों की बुवाई, सिंचाई व मंडी परिवहन के लिए उपयुक्त मौसम।")
             ?: "✅ मौसम अनुकूल: रबी फसलों की बुवाई, सिंचाई व मंडी परिवहन के लिए उपयुक्त मौसम।"
         val humidity = prefs.getInt("humidity_$cityName", 35)
@@ -44,3 +44,4 @@ object WeatherCache {
             .apply()
     }
 }
+

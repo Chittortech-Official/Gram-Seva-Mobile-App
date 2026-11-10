@@ -280,69 +280,21 @@ fun HomeScreen(
                 }
             }
 
-            // ─── 2. Quick Feature Navigation Strip ─────────────────────────────
+            // ─── 2. Key Metric Cards ──────────────────────────────────────────
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    QuickActionTile(
-                        icon = Icons.Default.Storefront,
-                        title = "मंडी भाव",
-                        subtitle = "ताजा रेट",
-                        color = GramPrimary,
-                        bgColor = GramPrimaryLight,
-                        onClick = { onNavigateToTab(1) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickActionTile(
-                        icon = Icons.Default.CloudQueue,
-                        title = "मौसम रडार",
-                        subtitle = "7-दिन अलर्ट",
-                        color = GramBlue,
-                        bgColor = GramBlueLight,
-                        onClick = { onNavigateToTab(2) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickActionTile(
-                        icon = Icons.Default.AccountBalance,
-                        title = "योजनाएं",
-                        subtitle = "पात्रता जांचें",
-                        color = GramGold,
-                        bgColor = GramGoldLight,
-                        onClick = { onNavigateToTab(3) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickActionTile(
-                        icon = Icons.Default.PinDrop,
-                        title = "डाकघर",
-                        subtitle = "पिनकोड खोज",
-                        color = GramGreen,
-                        bgColor = GramGreenLight,
-                        onClick = { onNavigateToTab(3) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            // ─── 3. Key Metric Cards ──────────────────────────────────────────
-            item {
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     KpiCard(
                         title = "चित्तौड़गढ़ मंडियां",
                         value = "6 मुख्य मंडियां",
-                        subtitle = "लाइव भाव",
+                        subtitle = "ताजा भाव",
                         icon = Icons.Default.Storefront,
-                        iconBg = GramPrimaryLight,
-                        iconTint = GramPrimary,
+                        iconBg = Color(0xFFE8F5E9),
+                        iconTint = Color(0xFF2E7D32),
                         onClick = { onNavigateToTab(1) },
                         modifier = Modifier.weight(1f)
                     )
@@ -352,22 +304,22 @@ fun HomeScreen(
                         value = "₹19,100",
                         subtitle = "निम्बाहेड़ा मंडी",
                         icon = Icons.Default.TrendingUp,
-                        iconBg = GramGreenLight,
-                        iconTint = GramGreen,
-                        valueColor = GramGreen,
+                        iconBg = Color(0xFFFEF3C7),
+                        iconTint = Color(0xFFB45309),
+                        valueColor = Color(0xFFB45309),
                         onClick = { onNavigateToTab(1) },
                         modifier = Modifier.weight(1f)
                     )
                 }
             }
 
-            // ─── 4. Live Mandi Rates Section ──────────────────────────────────
+            // ─── 3. Live Mandi Rates Section ──────────────────────────────────
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 SectionHeader(
-                    title = "🌾 चित्तौड़गढ़ ज़िला आज के मंडी भाव",
+                    title = "🌾 आज के मंडी भाव",
                     subtitle = "चित्तौड़गढ़, निम्बाहेड़ा, कपासन, बेगूं, बड़ी सादड़ी व नीमच",
-                    actionText = "मंडी तुलना देखें →",
+                    actionText = "मंडी तुलना →",
                     onActionClick = { onNavigateToTab(1) }
                 )
 
@@ -376,23 +328,23 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     cropFilters.forEach { crop ->
                         val isSelected = selectedCropFilter == crop
                         FilterChip(
                             selected = isSelected,
                             onClick = { selectedCropFilter = crop },
-                            label = { Text(crop, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                            label = { Text(crop, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = GramPrimary,
+                                selectedContainerColor = Color(0xFF1B5E20),
                                 selectedLabelColor = Color.White,
                                 containerColor = GramCardWhite,
                                 labelColor = TextSecondary
                             ),
                             border = FilterChipDefaults.filterChipBorder(
-                                borderColor = if (isSelected) GramPrimary else GramBorder,
+                                borderColor = if (isSelected) Color(0xFF1B5E20) else Color(0xFFE2E8F0),
                                 enabled = true,
                                 selected = isSelected
                             )
@@ -401,63 +353,13 @@ fun HomeScreen(
                 }
             }
 
-            // ─── 5. Mandi Price Cards List ─────────────────────────────────────
+            // ─── 4. Mandi Price Cards List ─────────────────────────────────────
             items(filteredMandiPrices) { item ->
                 MandiPriceCard(
                     item = item,
                     onShareClick = { ShareUtils.shareMandiItem(context, item) }
                 )
             }
-        }
-    }
-}
-
-@Composable
-fun QuickActionTile(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    color: Color,
-    bgColor: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-        border = BorderStroke(1.dp, GramBorder),
-        elevation = CardDefaults.cardElevation(1.5.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 10.dp, horizontal = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(bgColor),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = title,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = GramNavy,
-                maxLines = 1
-            )
-            Text(
-                text = subtitle,
-                fontSize = 9.sp,
-                color = GramSlate,
-                maxLines = 1
-            )
         }
     }
 }
@@ -470,98 +372,91 @@ fun MandiPriceCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(14.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-        border = BorderStroke(1.dp, GramBorder),
-        elevation = CardDefaults.cardElevation(1.5.dp)
+        border = BorderStroke(0.5.dp, Color(0xFFE2E8F0)),
+        elevation = CardDefaults.cardElevation(1.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+            // Header Row: Crop Name, Trend & Share
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = item.commodity,
+                        text = item.commodity.substringBefore(" ("),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = GramNavy
                     )
                     Text(
                         text = "${item.market} • वैरायटी: ${item.variety}",
-                        fontSize = 12.sp,
-                        color = GramSlate
+                        fontSize = 11.sp,
+                        color = GramSlate,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                StatusBadge(status = item.trend)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    StatusBadge(status = item.trend)
+
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE8F5E9))
+                            .clickable { onShareClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Share,
+                            contentDescription = "Share",
+                            tint = Color(0xFF2E7D32),
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-            HorizontalDivider(color = GramBorder.copy(alpha = 0.6f))
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
+            // Price Row: Modal Price on left, Range on right
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-                Column {
-                    Text(
-                        text = "मॉडल भाव (Modal Rate)",
-                        fontSize = 11.sp,
-                        color = TextMuted
-                    )
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
                     Text(
                         text = "₹${item.modalPrice}",
-                        fontSize = 22.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = GramPrimary
+                        color = Color(0xFF1B5E20)
                     )
                     Text(
-                        text = "प्रति क्विंटल (Per Quintal)",
-                        fontSize = 10.sp,
-                        color = GramSlate
+                        text = "/क्विंटल",
+                        fontSize = 11.sp,
+                        color = GramSlate,
+                        modifier = Modifier.padding(bottom = 1.5.dp)
                     )
                 }
 
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "न्यूनतम - अधिकतम",
-                        fontSize = 11.sp,
-                        color = TextMuted
-                    )
-                    Text(
-                        text = "₹${item.minPrice} - ₹${item.maxPrice}",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = GramNavy
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = item.arrivalDate,
-                            fontSize = 10.sp,
-                            color = GramGreen,
-                            fontWeight = FontWeight.Bold
-                        )
-                        IconButton(
-                            onClick = onShareClick,
-                            modifier = Modifier.size(26.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.Share,
-                                contentDescription = "Share",
-                                tint = Color(0xFF25D366),
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
+                Text(
+                    text = "रेंज: ₹${item.minPrice} - ₹${item.maxPrice}",
+                    fontSize = 11.sp,
+                    color = GramSlate,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
