@@ -242,25 +242,36 @@ class GramSevaRepository {
     }
 
     companion object {
+        const val CLOUDFLARE_EDGE_URL = "https://gramseva-api.chittortech.workers.dev"
         const val OGD_API_KEY = "579b464db66ec23bdd0000015e0681c20b34487b4f20fc7ff279002e"
     }
 
-    // ─── 3. Live Agmarknet Mandi API from Open Government Data (data.gov.in) ───
+    // ─── 3. Live Agmarknet Mandi API via High-Performance Cloudflare Edge ───
     suspend fun fetchLiveMandiPrices(
         state: String? = null,
         apiKey: String = OGD_API_KEY
     ): List<MandiItem> = withContext(Dispatchers.IO) {
         val fallback = getMandiPrices(state)
-        if (apiKey.isBlank()) {
-            return@withContext fallback
-        }
         try {
-            val stateFilter = if (!state.isNullOrBlank() && state != "सभी राज्य" && state != "All") {
-                "&filters%5Bstate%5D=" + java.net.URLEncoder.encode(state, "UTF-8")
+            val stateParam = if (!state.isNullOrBlank() && state != "सभी राज्य" && state != "All") {
+                "?state=" + java.net.URLEncoder.encode(state, "UTF-8")
             } else ""
-            val url = "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=$apiKey&format=json&limit=100$stateFilter"
-            val request = Request.Builder().url(url).build()
-            val response = client.newCall(request).execute()
+
+            // Primary: Cloudflare Edge Cache (Super-fast ~20ms, cached for 30 mins)
+            val primaryUrl = "$CLOUDFLARE_EDGE_URL/$stateParam"
+            var request = Request.Builder().url(primaryUrl).build()
+            var response = client.newCall(request).execute()
+
+            // Failover to direct Government API if edge worker is unreachable
+            if (!response.isSuccessful && apiKey.isNotBlank()) {
+                val stateFilter = if (!state.isNullOrBlank() && state != "सभी राज्य" && state != "All") {
+                    "&filters%5Bstate%5D=" + java.net.URLEncoder.encode(state, "UTF-8")
+                } else ""
+                val directUrl = "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=$apiKey&format=json&limit=100$stateFilter"
+                request = Request.Builder().url(directUrl).build()
+                response = client.newCall(request).execute()
+            }
+
             if (!response.isSuccessful) return@withContext fallback
 
             val body = response.body?.string() ?: "{}"
