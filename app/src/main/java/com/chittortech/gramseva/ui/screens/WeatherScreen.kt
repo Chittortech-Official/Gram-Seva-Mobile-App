@@ -1,6 +1,8 @@
 package com.chittortech.gramseva.ui.screens
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -9,8 +11,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -29,8 +31,8 @@ import androidx.compose.ui.unit.sp
 import com.chittortech.gramseva.data.cache.WeatherCache
 import com.chittortech.gramseva.data.location.LocationProvider
 import com.chittortech.gramseva.data.models.DailyForecast
-import com.chittortech.gramseva.data.models.WeatherInfo
 import com.chittortech.gramseva.data.repository.GramSevaRepository
+import com.chittortech.gramseva.ui.components.GramSevaFooter
 import com.chittortech.gramseva.ui.components.SectionHeader
 import com.chittortech.gramseva.ui.theme.*
 import kotlinx.coroutines.launch
@@ -41,14 +43,14 @@ fun WeatherScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    
-    // Focused 100% on Chittorgarh District's 11 Tehsils & border trading hubs
+
+    // 11 Tehsils of Chittorgarh district + border trading hubs (compact clean names)
     val tehsils = remember {
         LocationProvider.chittorgarhTehsils.map {
-            GramSevaRepository.LocationCoord("${it.nameHindi} तहसील", it.lat, it.lon, it.district)
+            GramSevaRepository.LocationCoord(it.nameHindi, it.lat, it.lon, it.district)
         } + listOf(
-            GramSevaRepository.LocationCoord("नीमच (सीमावर्ती)", 24.4700, 74.8700, "Neemuch"),
-            GramSevaRepository.LocationCoord("मंदसौर (मंडी हब)", 24.0722, 75.0682, "Mandsaur")
+            GramSevaRepository.LocationCoord("नीमच", 24.4700, 74.8700, "Neemuch"),
+            GramSevaRepository.LocationCoord("मंदसौर", 24.0722, 75.0682, "Mandsaur")
         )
     }
 
@@ -78,7 +80,6 @@ fun WeatherScreen(
     }
 
     var isLoading by remember { mutableStateOf(false) }
-    // Initialized from persistent cache to completely eliminate 31°C to 26°C jump
     var weather by remember {
         mutableStateOf(WeatherCache.getCachedWeather(context, selectedLocation.nameHindi))
     }
@@ -99,17 +100,17 @@ fun WeatherScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(GramBackground),
-        contentPadding = PaddingValues(bottom = 12.dp)
+            .background(Color(0xFFF8FAFC)),
+        contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         // ─── 1. Header & Tehsil Selector ──────────────────────────────────────
         item {
             Surface(
                 color = GramCardWhite,
-                border = BorderStroke(1.dp, GramBorder),
-                shadowElevation = 1.5.dp
+                border = BorderStroke(0.5.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 1.dp
             ) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -121,9 +122,9 @@ fun WeatherScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Surface(
-                                shape = androidx.compose.foundation.shape.CircleShape,
+                                shape = CircleShape,
                                 color = Color.White,
-                                border = BorderStroke(1.dp, GramBorder),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                                 shadowElevation = 1.dp,
                                 modifier = Modifier.size(38.dp)
                             ) {
@@ -132,7 +133,7 @@ fun WeatherScreen(
                                     contentDescription = "GramSeva Logo",
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .clip(androidx.compose.foundation.shape.CircleShape)
+                                        .clip(CircleShape)
                                 )
                             }
 
@@ -181,12 +182,12 @@ fun WeatherScreen(
                         text = "📍 तहसील चुनें (1-टैप लाइव मौसम):",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = GramSlate
+                        color = Color(0xFF64748B)
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    // Clean Tehsil Chips
+                    // Compact Tehsil Pills
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -196,8 +197,8 @@ fun WeatherScreen(
                         // GPS Button
                         Surface(
                             shape = RoundedCornerShape(20.dp),
-                            color = GramGreenLight,
-                            border = BorderStroke(1.dp, GramGreen),
+                            color = Color(0xFFE8F5E9),
+                            border = BorderStroke(1.dp, Color(0xFF81C784)),
                             modifier = Modifier.clickable {
                                 permissionLauncher.launch(
                                     arrayOf(
@@ -213,11 +214,11 @@ fun WeatherScreen(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
                                 if (isDetectingGps) {
-                                    CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp, color = GramGreen)
+                                    CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp, color = Color(0xFF2E7D32))
                                 } else {
-                                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = GramGreen, modifier = Modifier.size(14.dp))
+                                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(14.dp))
                                 }
-                                Text("GPS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GramGreen)
+                                Text("GPS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
                             }
                         }
 
@@ -225,8 +226,9 @@ fun WeatherScreen(
                             val isSelected = selectedLocation.nameHindi == loc.nameHindi
                             Surface(
                                 shape = RoundedCornerShape(20.dp),
-                                color = if (isSelected) GramPrimary else GramBackground,
-                                border = BorderStroke(1.dp, if (isSelected) GramPrimary else GramBorder),
+                                color = if (isSelected) Color(0xFF1B5E20) else Color.White,
+                                border = BorderStroke(1.dp, if (isSelected) Color(0xFF1B5E20) else Color(0xFFE2E8F0)),
+                                shadowElevation = if (isSelected) 1.5.dp else 0.dp,
                                 modifier = Modifier.clickable {
                                     selectedLocation = loc
                                     weather = WeatherCache.getCachedWeather(context, loc.nameHindi)
@@ -236,7 +238,7 @@ fun WeatherScreen(
                                     text = loc.nameHindi,
                                     fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color.White else GramNavy,
+                                    color = if (isSelected) Color.White else Color(0xFF1E293B),
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                 )
                             }
@@ -246,7 +248,7 @@ fun WeatherScreen(
             }
         }
 
-        // ─── 2. Main Executive Weather Hero Card ──────────────────────────────
+        // ─── 2. Atmospheric Modern Weather Hero Card ──────────────────────────
         item {
             Box(
                 modifier = Modifier
@@ -254,10 +256,9 @@ fun WeatherScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
                 Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-                    border = BorderStroke(0.5.dp, GramBorder),
-                    elevation = CardDefaults.cardElevation(0.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                    elevation = CardDefaults.cardElevation(2.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -266,118 +267,154 @@ fun WeatherScreen(
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(
-                                        Color(0xFFFFF7ED),
-                                        Color.White
+                                        Color(0xFF0284C7), // Vibrant Sky 600
+                                        Color(0xFF0369A1)  // Deep Sky 700
                                     )
                                 )
                             )
                             .padding(18.dp)
                     ) {
+                        // Top row inside card: Location on left, Live satellite badge on right
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = GramPrimary, modifier = Modifier.size(18.dp))
-                                    Text(
-                                        text = selectedLocation.nameHindi,
-                                        fontSize = 17.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = GramNavy
-                                    )
-
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = Color.White,
-                                        border = BorderStroke(0.5.dp, GramBorder)
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(3.dp),
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        ) {
-                                            androidx.compose.foundation.Image(
-                                                painter = androidx.compose.ui.res.painterResource(id = com.chittortech.gramseva.R.drawable.app_logo),
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .size(14.dp)
-                                                    .clip(androidx.compose.foundation.shape.CircleShape)
-                                            )
-                                            Text("ग्राम-सेवा", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = GramPrimaryDark)
-                                        }
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = weather.condition,
-                                    fontSize = 13.sp,
-                                    color = GramSlate,
-                                    fontWeight = FontWeight.Medium
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
                                 )
-                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "महसूस: ~${weather.feelsLike.toInt()}°C",
-                                    fontSize = 11.sp,
-                                    color = TextMuted
+                                    text = "${selectedLocation.nameHindi} तहसील",
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
                                 )
                             }
 
-                            // Temperature Display without wrapping
-                            Row(
-                                verticalAlignment = Alignment.Top,
-                                modifier = Modifier.padding(start = 8.dp)
+                            // Frosted Satellite Live Badge
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color.White.copy(alpha = 0.22f),
+                                border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.4f))
                             ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(7.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF4ADE80))
+                                    )
+                                    Text(
+                                        text = "उपग्रह लाइव",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Middle Row: Temperature & Large Weather Graphic
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Row(verticalAlignment = Alignment.Top) {
+                                    Text(
+                                        text = "${weather.temperature.toInt()}",
+                                        fontSize = 56.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color.White,
+                                        lineHeight = 56.sp
+                                    )
+                                    Text(
+                                        text = "°C",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFBAE6FD),
+                                        modifier = Modifier.padding(top = 4.dp, start = 2.dp)
+                                    )
+                                }
+
                                 Text(
-                                    text = "${weather.temperature.toInt()}",
-                                    fontSize = 42.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = GramPrimaryDark
-                                )
-                                Text(
-                                    text = "°C",
-                                    fontSize = 20.sp,
+                                    text = weather.condition,
+                                    fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = GramPrimaryDark,
-                                    modifier = Modifier.padding(top = 4.dp, start = 2.dp)
+                                    color = Color.White
+                                )
+
+                                Text(
+                                    text = "महसूस ~${weather.feelsLike.toInt()}°C • हवा ${String.format(java.util.Locale.US, "%.1f", weather.windSpeed)} km/h",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFE0F2FE)
+                                )
+                            }
+
+                            // Glowing circular weather emblem
+                            Box(
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.16f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val weatherIcon = when {
+                                    weather.rainProbability > 40 -> Icons.Default.WaterDrop
+                                    weather.condition.contains("बादल") -> Icons.Default.Cloud
+                                    else -> Icons.Default.WbSunny
+                                }
+                                val iconTint = when {
+                                    weather.rainProbability > 40 -> Color(0xFF93C5FD)
+                                    weather.condition.contains("बादल") -> Color(0xFFE2E8F0)
+                                    else -> Color(0xFFFDE047)
+                                }
+                                Icon(
+                                    imageVector = weatherIcon,
+                                    contentDescription = null,
+                                    tint = iconTint,
+                                    modifier = Modifier.size(42.dp)
                                 )
                             }
                         }
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Dynamic Farmer Advisory Box
+                        // High / Low Range Pill
+                        val maxT = weather.dailyForecast.firstOrNull()?.maxTemp?.toInt() ?: (weather.temperature.toInt() + 4)
+                        val minT = weather.dailyForecast.firstOrNull()?.minTemp?.toInt() ?: (weather.temperature.toInt() - 6)
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = GramSurfaceVariant,
-                            border = BorderStroke(1.dp, GramGold.copy(alpha = 0.35f)),
+                            color = Color.White.copy(alpha = 0.16f),
+                            border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.25f)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(Icons.Default.TipsAndUpdates, contentDescription = null, tint = GramGold, modifier = Modifier.size(18.dp))
-                                    Text(
-                                        text = "किसान कृषि मौसम सलाह:",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = GramGoldGradStart
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = weather.farmerAdvisory,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = GramNavy,
-                                    lineHeight = 17.sp
-                                )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 7.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("🔺 अधिकतम: $maxT°C", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text("•", color = Color.White.copy(alpha = 0.6f))
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text("🔻 न्यूनतम: $minT°C", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE0F2FE))
                             }
                         }
                     }
@@ -385,58 +422,213 @@ fun WeatherScreen(
             }
         }
 
-        // ─── 3. Weather Metrics Grid (Clean 3-Item Row) ────────────────────────
+        // ─── 3. 3 Themed Weather Metric Cards ─────────────────────────────────
         item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                WeatherMetricPill(
-                    icon = Icons.Default.WaterDrop,
-                    title = "वर्षा संभावना",
-                    value = "${weather.rainProbability}%",
-                    iconColor = GramBlue,
-                    bgColor = GramBlueLight,
-                    modifier = Modifier.weight(1f)
-                )
+                // Rain Card (Blue)
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
+                    border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                    elevation = CardDefaults.cardElevation(0.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFDBEAFE)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.WaterDrop, contentDescription = null, tint = Color(0xFF2563EB), modifier = Modifier.size(17.dp))
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "${weather.rainProbability}%",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF1E3A8A)
+                        )
+                        Text(
+                            text = "वर्षा संभावना",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF3B82F6)
+                        )
+                    }
+                }
 
-                WeatherMetricPill(
-                    icon = Icons.Default.Air,
-                    title = "हवा की गति",
-                    value = "${String.format(java.util.Locale.US, "%.1f", weather.windSpeed)} km/h",
-                    iconColor = GramAmber,
-                    bgColor = GramAmberLight,
-                    modifier = Modifier.weight(1f)
-                )
+                // Wind Card (Amber)
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBEB)),
+                    border = BorderStroke(1.dp, Color(0xFFFDE68A)),
+                    elevation = CardDefaults.cardElevation(0.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFFEF3C7)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Air, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(17.dp))
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "${String.format(java.util.Locale.US, "%.1f", weather.windSpeed)} km/h",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF78350F),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "हवा की गति",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFD97706)
+                        )
+                    }
+                }
 
-                WeatherMetricPill(
-                    icon = Icons.Default.Grain,
-                    title = "हवा में नमी",
-                    value = "${weather.humidity}%",
-                    iconColor = GramGreen,
-                    bgColor = GramGreenLight,
-                    modifier = Modifier.weight(1f)
-                )
+                // Humidity Card (Emerald)
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFECFDF5)),
+                    border = BorderStroke(1.dp, Color(0xFFA7F3D0)),
+                    elevation = CardDefaults.cardElevation(0.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFD1FAE5)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Grain, contentDescription = null, tint = Color(0xFF059669), modifier = Modifier.size(17.dp))
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "${weather.humidity}%",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF064E3B)
+                        )
+                        Text(
+                            text = "हवा में नमी",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF059669)
+                        )
+                    }
+                }
             }
         }
 
-        // ─── 4. 7-Day Extended Farmer Forecast ────────────────────────────────
+        // ─── 4. Kisan Agri Advisory Bulletin Card ─────────────────────────────
         item {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF4)),
+                border = BorderStroke(1.dp, Color(0xFF86EFAC)),
+                elevation = CardDefaults.cardElevation(0.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.TipsAndUpdates,
+                                contentDescription = null,
+                                tint = Color(0xFF15803D),
+                                modifier = Modifier.size(19.dp)
+                            )
+                            Text(
+                                text = "कृषि मौसम परामर्श (KVK चित्तौड़गढ़)",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF15803D)
+                            )
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFDCFCE7)
+                        ) {
+                            Text(
+                                text = "आज की सलाह",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF166534),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = weather.farmerAdvisory,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF14532D),
+                        lineHeight = 19.sp
+                    )
+                }
+            }
+        }
+
+        // ─── 5. 7-Day Extended Farmer Forecast ────────────────────────────────
+        item {
+            Spacer(modifier = Modifier.height(18.dp))
             SectionHeader(
                 title = "📅 7 दिवसीय मौसम व वर्षा पूर्वानुमान",
-                subtitle = "फसल कटाई, दवा छिड़काव व सिंचाई की योजना बनाएं"
+                subtitle = "चित्तौड़गढ़ ज़िला • कटाई, छिड़काव व सिंचाई योजना"
             )
             Spacer(modifier = Modifier.height(6.dp))
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp),
-                shape = RoundedCornerShape(14.dp),
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-                border = BorderStroke(0.5.dp, GramBorder),
+                border = BorderStroke(0.5.dp, Color(0xFFE2E8F0)),
                 elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -444,7 +636,8 @@ fun WeatherScreen(
                         DailyForecastRow(day = day)
                         if (index < weather.dailyForecast.size - 1) {
                             HorizontalDivider(
-                                color = GramBorder.copy(alpha = 0.45f),
+                                color = Color(0xFFF1F5F9),
+                                thickness = 1.dp,
                                 modifier = Modifier.padding(horizontal = 14.dp)
                             )
                         }
@@ -453,16 +646,24 @@ fun WeatherScreen(
             }
         }
 
-        // ─── 5. Kisan Weather Helpline Banner ─────────────────────────────────
+        // ─── 6. Kisan Toll-Free Weather Helpline Card ─────────────────────────
         item {
             Spacer(modifier = Modifier.height(14.dp))
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-                border = BorderStroke(0.5.dp, GramBorder),
+                    .padding(horizontal = 16.dp)
+                    .clickable {
+                        try {
+                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:18001801551"))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // Ignored if dialer not present
+                        }
+                    },
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF4)),
+                border = BorderStroke(1.dp, Color(0xFF86EFAC)),
                 elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Row(
@@ -472,86 +673,48 @@ fun WeatherScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(GramGreenLight),
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFDCFCE7)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Call, contentDescription = null, tint = GramGreen, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Call, contentDescription = null, tint = Color(0xFF15803D), modifier = Modifier.size(20.dp))
                     }
 
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "किसान कॉल सेन्टर (टोल-फ्री मौसम सलाह)",
+                            text = "किसान कॉल सेन्टर (निःशुल्क मौसम सलाह)",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = GramNavy
+                            color = Color(0xFF14532D)
                         )
                         Text(
-                            text = "1800-180-1551 (सुबह 6:00 से रात 10:00 तक)",
-                            fontSize = 12.sp,
+                            text = "1800-180-1551 • सुबह 6:00 से रात 10:00 तक",
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = GramGreen
+                            color = Color(0xFF16A34A)
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFF15803D)
+                    ) {
+                        Text(
+                            text = "कॉल करें",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                         )
                     }
                 }
             }
         }
 
-        // ─── 6. Official GramSeva Footer ──────────────────────────────────────
+        // ─── 7. Official GramSeva Footer ──────────────────────────────────────
         item {
-            com.chittortech.gramseva.ui.components.GramSevaFooter()
-        }
-    }
-}
-
-@Composable
-fun WeatherMetricPill(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    value: String,
-    iconColor: Color,
-    bgColor: Color,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = GramCardWhite),
-        border = BorderStroke(0.5.dp, GramBorder),
-        elevation = CardDefaults.cardElevation(0.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(bgColor),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(18.dp))
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = value,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = GramNavy,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = title,
-                fontSize = 10.sp,
-                color = GramSlate,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            GramSevaFooter()
         }
     }
 }
@@ -561,29 +724,32 @@ fun DailyForecastRow(day: DailyForecast) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 9.dp),
+            .padding(horizontal = 14.dp, vertical = 11.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Day & Short Date (Fixed width prevents shifting on narrow screens)
-        Column(modifier = Modifier.width(74.dp)) {
+        // Day Name & Short Date
+        Column(modifier = Modifier.width(82.dp)) {
             Text(
                 text = day.dayName,
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = GramNavy,
+                color = Color(0xFF0F172A),
                 maxLines = 1
             )
-            val shortDate = if (day.date.length >= 10) day.date.substring(5) else day.date
+            val shortDate = if (day.date.length >= 10) {
+                val parts = day.date.split("-")
+                if (parts.size == 3) "${parts[2]} नवं" else day.date
+            } else day.date
             Text(
                 text = shortDate,
                 fontSize = 11.sp,
-                color = GramSlate,
+                color = Color(0xFF64748B),
                 maxLines = 1
             )
         }
 
-        // Condition & Rain Indicator (Center column flexes to fill available space)
+        // Center Condition Icon & Rain Status Badge
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -591,58 +757,87 @@ fun DailyForecastRow(day: DailyForecast) {
                 .weight(1f)
                 .padding(horizontal = 6.dp)
         ) {
+            val isRain = day.rainProbability > 30 || day.condition.contains("बारिश")
+            val isCloud = day.condition.contains("बादल")
+            val icon = when {
+                isRain -> Icons.Default.WaterDrop
+                isCloud -> Icons.Default.Cloud
+                else -> Icons.Default.WbSunny
+            }
+            val tint = when {
+                isRain -> Color(0xFF2563EB)
+                isCloud -> Color(0xFF64748B)
+                else -> Color(0xFFEAB308)
+            }
+
             Icon(
-                imageVector = if (day.rainProbability > 30) Icons.Default.WaterDrop else Icons.Default.WbSunny,
+                imageVector = icon,
                 contentDescription = null,
-                tint = if (day.rainProbability > 30) GramBlue else GramGold,
-                modifier = Modifier.size(20.dp)
+                tint = tint,
+                modifier = Modifier.size(22.dp)
             )
+
             Column(modifier = Modifier.weight(1f, fill = false)) {
                 Text(
                     text = day.condition,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    color = GramNavy,
+                    color = Color(0xFF1E293B),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = "वर्षा: ${day.rainProbability}%",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (day.rainProbability > 30) GramBlue else GramSlate,
-                    maxLines = 1
-                )
+
+                if (day.rainProbability > 20) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color(0xFFDBEAFE)
+                    ) {
+                        Text(
+                            text = "🌧️ ${day.rainProbability}% वर्षा",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1D4ED8),
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "वर्षा मुक्त",
+                        fontSize = 10.sp,
+                        color = Color(0xFF15803D),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
 
-        // Min & Max Temp Pill (Neat right-aligned capsule)
+        // High & Low Temperature Capsule
         Surface(
             shape = RoundedCornerShape(8.dp),
-            color = GramBackground,
-            border = BorderStroke(0.5.dp, GramBorder)
+            color = Color(0xFFF8FAFC),
+            border = BorderStroke(0.5.dp, Color(0xFFE2E8F0))
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
             ) {
                 Text(
                     text = "${day.maxTemp.toInt()}°",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = GramPrimaryDark
+                    color = Color(0xFFDC2626) // Amber/Red for high
                 )
                 Text(
                     text = "/",
                     fontSize = 11.sp,
-                    color = GramSlate.copy(alpha = 0.5f)
+                    color = Color(0xFFCBD5E1)
                 )
                 Text(
                     text = "${day.minTemp.toInt()}°",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = GramSlate
+                    color = Color(0xFF2563EB) // Blue for low
                 )
             }
         }

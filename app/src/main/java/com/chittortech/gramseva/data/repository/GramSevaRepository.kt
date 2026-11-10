@@ -67,18 +67,45 @@ class GramSevaRepository {
                 val minTemps = dailyJson.optJSONArray("temperature_2m_min") ?: JSONArray()
                 val rainProbs = dailyJson.optJSONArray("precipitation_probability_max") ?: JSONArray()
 
-                val dayLabels = listOf("आज", "कल", "परसों", "4 दिन बाद", "5 दिन बाद", "6 दिन बाद", "7 दिन बाद")
+                val dayNamesHindi = mapOf(
+                    java.util.Calendar.SUNDAY to "रविवार",
+                    java.util.Calendar.MONDAY to "सोमवार",
+                    java.util.Calendar.TUESDAY to "मंगलवार",
+                    java.util.Calendar.WEDNESDAY to "बुधवार",
+                    java.util.Calendar.THURSDAY to "गुरुवार",
+                    java.util.Calendar.FRIDAY to "शुक्रवार",
+                    java.util.Calendar.SATURDAY to "शनिवार"
+                )
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                val cal = java.util.Calendar.getInstance()
 
                 for (i in 0 until times.length().coerceAtMost(7)) {
                     val code = codes.optInt(i, 0)
                     val maxT = maxTemps.optDouble(i, temp + 1.2)
                     val minT = minTemps.optDouble(i, temp - 13.5)
                     val rainP = rainProbs.optInt(i, 0)
+                    val dateStr = times.optString(i)
+
+                    val label = when (i) {
+                        0 -> "आज"
+                        1 -> "कल"
+                        else -> {
+                            try {
+                                val d = sdf.parse(dateStr)
+                                if (d != null) {
+                                    cal.time = d
+                                    dayNamesHindi[cal.get(java.util.Calendar.DAY_OF_WEEK)] ?: "${i + 1}वें दिन"
+                                } else "${i + 1}वें दिन"
+                            } catch (e: Exception) {
+                                "${i + 1}वें दिन"
+                            }
+                        }
+                    }
 
                     dailyForecasts.add(
                         DailyForecast(
-                            date = times.optString(i),
-                            dayName = dayLabels.getOrElse(i) { "${i + 1}वें दिन" },
+                            date = dateStr,
+                            dayName = label,
                             maxTemp = maxT,
                             minTemp = minT,
                             rainProbability = rainP,
@@ -150,18 +177,18 @@ class GramSevaRepository {
     }
 
     private fun getFallbackDailyForecast(baseTemp: Double): List<DailyForecast> {
-        val days = listOf("आज", "कल", "परसों", "शनिवार", "रविवार", "सोमवार", "मंगलवार")
+        val days = listOf("आज", "कल", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार", "रविवार")
         val conditions = listOf(
             "साफ धूप", "हल्के बादल", "साफ धूप",
             "हल्की हवा", "साफ मौसम", "धूप खिली", "साफ आसमान"
         )
         return days.mapIndexed { idx, day ->
             DailyForecast(
-                date = "2026-11-${String.format("%02d", 5 + idx)}",
+                date = "2026-11-${String.format("%02d", 10 + idx)}",
                 dayName = day,
                 maxTemp = baseTemp + (idx % 3) - 1,
                 minTemp = baseTemp - 11.0 + (idx % 2),
-                rainProbability = if (idx == 1) 35 else 10 + (idx * 3),
+                rainProbability = if (idx == 1) 35 else 0,
                 condition = conditions[idx % conditions.size],
                 weatherCode = if (idx == 1) 2 else 0
             )
@@ -258,7 +285,7 @@ class GramSevaRepository {
             } else ""
 
             // Primary: Cloudflare Edge Cache (Super-fast ~20ms, cached for 30 mins)
-            val primaryUrl = "$CLOUDFLARE_EDGE_URL/$stateParam"
+            val primaryUrl = if (stateParam.isNotBlank()) "$CLOUDFLARE_EDGE_URL$stateParam" else "$CLOUDFLARE_EDGE_URL/"
             var request = Request.Builder().url(primaryUrl).build()
             var response = client.newCall(request).execute()
 
