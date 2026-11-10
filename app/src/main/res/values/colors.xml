@@ -6,6 +6,6 @@
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     <color name="status_bar_color">#0F5DA1</color>
-    <color name="ic_launcher_background">#0F5DA1</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
 </resources>
 
