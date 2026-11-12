@@ -41,8 +41,14 @@ android {
     }
 
     lint {
-        checkReleaseBuilds = false
-        abortOnError = false
+        // SECURITY: Run lint on release builds to catch security warnings before shipping
+        checkReleaseBuilds = true
+        // Abort release builds if any lint errors found (security-critical check)
+        abortOnError = true
+        // Suppress only known false positives — do NOT blanket-disable all checks
+        disable += setOf("ObsoleteLintCustomCheck")
+        // Export HTML report for review
+        htmlReport = true
     }
 }
 

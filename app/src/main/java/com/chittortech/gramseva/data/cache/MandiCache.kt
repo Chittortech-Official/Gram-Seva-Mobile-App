@@ -11,7 +11,8 @@ object MandiCache {
     private const val KEY_PREFIX = "mandi_items_"
 
     // In-memory cache for instant 0ms access across tab switches
-    val memoryCache = ConcurrentHashMap<String, List<MandiItem>>()
+    // SECURITY: private — prevents external mutation of cached price data
+    private val memoryCache = ConcurrentHashMap<String, List<MandiItem>>()
 
     fun getCachedMandiPrices(context: Context, state: String = "Rajasthan"): List<MandiItem>? {
         val cleanState = state.trim().ifBlank { "Rajasthan" }

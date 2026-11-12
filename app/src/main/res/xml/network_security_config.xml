@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    GramSeva Network Security Configuration
+    SECURITY: Explicitly blocks all cleartext (HTTP) traffic in all build variants.
+    - System CAs only (no user-installed CAs trusted in release)
+    - Cleartext blocked app-wide (defense-in-depth, Android 9+ default is already blocked)
+    - Debug overrides: none (developer should use HTTPS even during testing)
+-->
+<network-security-config>
+
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Trust only system-installed Certificate Authorities -->
+            <certificates src="system"/>
+            <!--
+                NOTE: User-installed CAs (e.g., Burp Suite proxy cert) are NOT trusted.
+                This prevents MITM attacks on rooted/developer devices.
+                Do NOT add <certificates src="user"/> in release builds.
+            -->
+        </trust-anchors>
+    </base-config>
+
+</network-security-config>
